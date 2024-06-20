@@ -1,0 +1,30 @@
+---
+  # Configuration for Nexus
+  #
+  # Initiate a configuration backup before making changes. The backup will be
+  # stored in the  ~/ directory. Change the directory in ../defaults/main.yml
+  #- include_tasks: initiate_nxos_config_backup.yml
+  #
+  # Configure Features
+  - include_tasks: configure_nxos_features.yml
+  # Configure Spanning tree and port-channel load-balancing
+  - include_tasks: configure_nxos_global_settings.yml
+  # Configure DNS domain lookup
+  - include_tasks: configure_domain_lookup.yml
+  # Configure SNMPv3
+  - include_tasks: configure_nxos_snmpv3.yml
+    when: configure_snmpv3 == true
+  # Configure Breakouts
+  - include_tasks: configure_nxos_breakout.yml
+  # Configure vlans
+  - include_tasks: configure_nxos_vlans.yml
+  # Configure NTP Servers and NTP Distribution
+  - include_tasks: configure_nxos_ntp.yml
+  # Configure Time Zone and Summer Time
+  - include_tasks: configure_nxos_timezone.yml
+  # Configure Interface, Port-Channel and Trunk Settings
+  - include_tasks: set_nxos_interfaces.yml
+  # Configure VPC
+  - include_tasks: configure_nxos_vpc.yml
+  # Save Configuration
+  - include_tasks: save_nxos_config.yml

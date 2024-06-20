@@ -1,0 +1,181 @@
+---
+# This file contains UCS IMM variables.
+# 
+# Enter Intersight API Key ID and the location of the SecretKey file
+# 
+api_private_key: SecretKey.txt
+# 
+# Prefix added to the pool/policy/profile configuration to easily identify items created by Ansible
+prefix: "AA02"
+
+# Organization Name
+org_name: "AA02"
+
+# UCS Domain Name
+ucs_domain_name: "AA02-6536"
+
+# FI Device Model - Set to UCS-FI-6536, UCS-FI-6454, or UCS-FI-64108
+fi_device_model: "UCS-FI-6536"
+
+# FC Breakout Ports on UCS-FI-6536 - These ports count backwards from 36-33.
+# Starting with 33, comment out any ports that are not used.
+# If not using UCS-FI-6536, set configure_6536_fc_breakout to false.
+configure_6536_fc_breakout: 'true'
+fc_breakout_speed: "32" # Set to 16 or 32
+fc_6536_breakout_ports:
+  - 36
+  - 35
+#  - 34
+#  - 33
+
+# FC Ports on UCS-FI-6454 or UCS-FI-64108 - These ports count upwards in groups of 4 
+# from port 1 except for 15 and 16
+# If not using UCS-FI-6454 or UCS-FI-64108, set configure_fc_6400_ports to false.
+configure_fc_6400_ports: 'false'
+fc_6400_first_port: 1
+fc_6400_end_port: 4 # Should be 4, 8, 12, or 16
+
+# Ethernet Breakout Ports on UCS-FI-6536, UCS-FI-6454, or UCS-FI-64108
+# If not configuring FI Ethernet Breakout Ports, set configure_ethernet_breakouts to false.
+configure_ethernet_breakouts: 'true'
+eth_breakout_speed: "25" # Set to 10 or 25
+fi_eth_breakout_ports:
+  - 17
+#  - 18
+#  - 19
+#  - 20
+
+# Configure Server Ports
+# Chassis and C-Series Full Server Ports
+configure_full_server_ports: 'true'
+full_server_ports: 
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+# Chassis and C-Series Breakout Server Ports
+# Make sure that any ports used here are set as breakouts above.
+configure_breakout_server_ports: 'true'
+breakout_server_ports:
+  - [17, 1] # [port, subport]
+  - [17, 2]
+  - [17, 3]
+  - [17, 4]
+#  - [18, 1]
+#  - [18, 3]
+
+# Network Uplink Port-Channel with Full Ports
+# This task sets up either 2 or 4 uplink ports in the port-channel.
+configure_network_uplink_full_ports: 'true'
+num_ports_in_pc: 2   # Set to 2 or 4
+uplink_port_channel_id_full: 131
+uplink_port_channel_port_1: 31
+uplink_port_channel_port_2: 32
+uplink_port_channel_port_3: 33
+uplink_port_channel_port_4: 34
+
+# Network Uplink Port-Channel with Breakout Ports
+# This task sets up a port-channel with either 4 or 8 broken-out uplink ports in the port-channel
+# For any port that is broken out, all 4 sub-ports are used.
+configure_network_uplink_breakout_ports: 'false'
+num_breakout_ports_in_pc: 4 # Set to either 4 or 8
+uplink_port_channel_id_breakout: 119
+uplink_port_channel_breakout_port_1: 19
+uplink_port_channel_breakout_port_2: 20
+
+# FC Breakout Uplink Port-Channel on UCS-FI-6536 - This task sets up a port-channel 
+# with with either 4 or 8 sub-ports in the port-channel (all 4 sub-ports are always used).
+# If a different number of ports is needed, the port policies can be adjusted in the Intersight Web interface if necessary.
+# If not using UCS-FI-6536 breakout FC port-channel, set configure_6536_fc_breakout_pc to false.
+configure_6536_fc_breakout_pc: 'true'
+num_6536_breakout_ports_in_pc: 4
+fc_6536_breakout_pc_id: 135
+fc_6536_breakout_pc_root_port_1: 35
+fc_6536_breakout_pc_root_port_2: 36
+
+# FC Uplink Port-Channel on UCS-FI-6454 or UCS-FI-64108 - This sets up a port-channel
+# with either 2 or 4 ports.
+# If not using UCS-FI-6454 or UCS-FI-64108, set configure_fc_6400_pc to false.
+configure_fc_6400_pc: 'false'
+fc_6400_fc_speed: 32 # Set to 16 or 32
+fc_6400_num_ports_in_pc: 2 # Set to either 2 or 4.
+fc_6400_pc_id: 11
+fc_6400_pc_port_1: 1
+fc_6400_pc_port_2: 2
+fc_6400_pc_port_3: 3
+fc_6400_pc_port_4: 4
+
+# FCoE Uplink Port-Channel - This port-channel is assumed to be a 2-port port-channel
+# from each FI. If more ports are needed, they can be added to the port policies from Intersight.
+configure_fcoe_uplink_pc: 'false'
+fcoe_uplink_pc_id: 127
+fcoe_uplink_pc_port_1: 27
+fcoe_uplink_pc_port_2: 28
+
+###############################################################################
+#
+# UCS Domain Policies
+#
+###############################################################################
+# Multicast Policy
+name_of_multicast_policy: "{{ prefix }}-MCAST"
+description_of_multicast_policy: "VLAN Multicast Policy"
+#
+# FI VLAN Policy
+name_of_fi_vlan_policy: "{{ ucs_domain_name }}-VLAN-Policy"
+description_of_fi_vlan_policy: "FI VLAN Policy"
+
+# FI VSAN-A Policy
+name_of_fi_vsan_a_policy: "{{ ucs_domain_name }}-VSAN-A-Policy"
+description_of_fi_vsan_a_policy: "FI VSAN-A Policy"
+
+# FI VSAN-B Policy
+name_of_fi_vsan_b_policy: "{{ ucs_domain_name }}-VSAN-B-Policy"
+description_of_fi_vsan_b_policy: "FI VSAN-B Policy"
+
+# Link Control UDLD Policy
+name_of_udld_policy: "{{ prefix }}-Link-Control-UDLD"
+description_of_udld_policy: "UDLD Policy"
+
+# FI A Port Policy
+name_of_fi_a_port_policy: "{{ ucs_domain_name }}-A-Port-Policy"
+description_of_fi_a_port_policy: "FI A Port Policy"
+
+# FI B Port Policy
+name_of_fi_b_port_policy: "{{ ucs_domain_name }}-B-Port-Policy"
+description_of_fi_b_port_policy: "FI B Port Policy"
+
+# NTP Policy
+ucs_timezone: "America/New_York" # Standard Linux Timezone
+name_of_ntp_policy: "{{ ucs_domain_name }}-NTP-Policy"
+description_of_ntp_policy: "UCS Domain NTP Policy"
+
+# Network Connectivity Policy
+name_of_netconn_policy: "{{ ucs_domain_name }}-Network-Connectivity"
+description_of_netconn_policy: "Network Connectivity Policy - DNS"
+
+# SNMP Policy
+name_of_snmp_policy: "{{ prefix }}-SNMP-Policy"
+description_of_snmp_policy: "SNMP Policy"
+
+# System QoS Policy
+name_of_system_qos_policy: "{{ prefix }}-System-QoS-Policy"
+description_of_system_qos_policy: "System QoS Policy"
+
+# UCS Domain Profile
+name_of_ucs_domain_profile: "{{ ucs_domain_name }}-Domain-Profile"
+description_of_ucs_domain_profile: "UCS Domain Profile"
+
+# UCS Chassis Power Policy
+name_of_chassis_power_policy: "{{ prefix }}-Chassis-Power-Policy"
+description_of_chassis_power_policy: "Initially Default Chassis Power Policy"
+
+# UCS Chassis Thermal Policy
+name_of_chassis_thermal_policy: "{{ prefix }}-Chassis-Thermal-Policy"
+description_of_chassis_thermal_policy: "Initially Default Chassis Thermal Policy"
+
+# UCS Chassis Profile
+name_of_ucs_chassis_profile: "{{ ucs_domain_name }}-1"
+description_of_ucs_chassis_profile: "UCS Chassis Profile for First Chassis"

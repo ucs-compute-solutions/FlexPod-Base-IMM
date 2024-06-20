@@ -1,0 +1,19 @@
+---
+  # This Task sets and snmpv3 user, system contact, and system location 
+  
+  - name: Set Up SNMP
+    cisco.nxos.nxos_snmp_server:
+      config:
+        contact: "{{ global_snmp_contact }}"
+        location: "{{ global_snmp_location }}"
+        users:
+          auth:
+            - user: "{{ global_snmp_user_name }}"
+              group: network-admin
+              authentication:
+                algorithm: sha
+                password: "{{ global_snmp_auth_password }}"
+                priv:
+                  privacy_password: "{{ global_snmp_priv_password }}"
+                  aes_128: true
+

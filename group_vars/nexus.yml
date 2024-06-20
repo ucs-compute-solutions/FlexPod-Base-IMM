@@ -1,0 +1,98 @@
+---
+ansible_connection: network_cli
+ansible_network_os: nxos
+#
+provider_ssh:
+  host: "{{ ansible_host }}"
+  username: "{{ ansible_username }}"
+  password: "{{ ansible_password }}"
+  transport: network_cli
+#
+backup_dir: "~/"
+#
+enabled_features:
+  - lacp
+  - vpc
+  - interface-vlan
+  - nxapi
+  - udld
+  - lldp
+#
+global_settings:
+  - spanning-tree port type network default
+  - spanning-tree port type edge bpduguard default
+  - spanning-tree port type edge bpdufilter default
+  - port-channel load-balance src-dst l4port
+  - system default switchport
+  - system default switchport shutdown
+#
+# Breakout Ports Configuration - If necessary, breakout ports can be configured. We are assuming that the same ports are configured on 
+# both switches. The ports will be broken out first and broken out ports, for example eth1/9/1, can be used in the n9kA.yml and n9kB.yml files.
+# Please see https://www.cisco.com/c/en/us/td/docs/dcn/nx-os/nexus9000/103x/configuration/interfaces/cisco-nexus-9000-nx-os-interfaces-configuration-guide-103x/m-overview.html#Cisco_Concept.dita_a32e509a-0d1f-4254-ab0d-1b32f5bb64be
+# and ensure that the interfaces assigned below meet requirements for the switches in use.
+configure_breakouts: 'false'
+breakout_map: 25g-4x # Set to 25g-4x or 10g-4x
+breakout_ports:
+  - 9
+  
+# NTP Distribution Stratum Level - set to 1 more than the Stratum Level of your Global NTP Servers
+ntp_stratum_level: 3
+#
+# Uplink Spanning Tree Port Type - can be set to network or normal
+uplink_st_port_type: network
+#
+# In this lab setup, port-channel numbers are keyed off of port numbers. For example, if port Eth1/11 is the first port
+# in a port-channel, the port-channel will be port-channel111. This does not apply to the vPC Peer Link.
+uplink_PC:
+  - interface: "port-channel127"
+    # id must be same as port-channel number
+    id: "127"
+    speed: "auto"
+    duplex: "auto"
+    description: "AA02-93180-Uplink"
+#
+peerlink_PC:
+  - interface: "port-channel10"
+    # id must be same as port-channel number
+    id: "10"
+    speed: "auto"
+    duplex: "auto"
+    description: "vPC Peer Link"
+#
+FI_A_PC:
+  - interface: "port-channel15"
+    # id must be same as port-channel number
+    id: "15"
+    speed: "auto"
+    duplex: "auto"
+    description: "AA02-6536-A"
+#
+FI_B_PC:
+  - interface: "port-channel16"
+    # id must be same as port-channel number
+    id: "16"
+    speed: "auto"
+    duplex: "auto"
+    description: "AA02-6536-B"
+#
+storage_A_PC:
+  - interface: "port-channel11"
+    # id must be same as port-channel number
+    id: "11"
+    speed: "auto"
+    duplex: "auto"
+    description: "AA02-C800-01"
+#
+storage_B_PC:
+  - interface: "port-channel12"
+    # id must be same as port-channel number
+    id: "12"
+    speed: "auto"
+    duplex: "auto"
+    description: "AA02-C800-02"
+#
+all_port_channels: "{{ peerlink_PC + uplink_PC + FI_A_PC + FI_B_PC + storage_A_PC + storage_B_PC }}"
+#
+# VPC Parameters
+#
+vpc_domain_id: "10"

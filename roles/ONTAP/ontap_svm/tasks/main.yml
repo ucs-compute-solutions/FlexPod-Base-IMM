@@ -1,0 +1,331 @@
+---
+# Create the aggr list variable for the Infra SVM
+- name: Create the aggregate list variable for Infra SVM
+  ansible.builtin.set_fact:
+    total_aggr_list: "{{ total_aggr_list | default([]) + [item.aggr_name] }}"
+  with_items:
+    - "{{ ha_pairs | map(attribute='node_specs') | flatten | map(attribute='data_aggregates') | flatten }}"
+  when: item.aggr_name is defined and item.aggr_name != None
+  tags:
+    - ontap_config_svm
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# See the aggr list
+- name: See the aggregate list for Infra SVM
+  ansible.builtin.debug: var=total_aggr_list
+  tags:
+    - ontap_config_svm
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Create the infrastructure SVM with required protocols
+- name: Create infrastructure SVM with specified protocols enabled
+  netapp.ontap.na_ontap_svm:
+    state: present
+    name: "{{item.svm_name}}"
+    allowed_protocols: "{{item.allowed_protocols}}"
+    aggr_list: "{{total_aggr_list}}"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  with_items:
+    - "{{svm_specs}}"
+  tags:
+    - ontap_config_svm
+
+# Enable NFS protocol with vstorage enabled for VAAI plugin. Adding NFSv4.1 attribute as well
+- name: Enable NFS protcol with vstorage
+  netapp.ontap.na_ontap_nfs:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    vstorage_state: enabled
+    service_state: started
+    nfsv41: enabled
+    udp: disabled
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  when:
+    - "('nfs' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_config_svm
+
+# Getting total count of data aggregates created
+- name: Get the total number of data aggregates created across all nodes in the ONTAP Cluster
+  ansible.builtin.set_fact:
+    total_aggr_count: "{{ total_aggr_list|length }}"
+  tags:
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Get the SVM root volume aggregate information
+- name: Get the SVM root volume aggregate information
+  netapp.ontap.na_ontap_rest_info:
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+    use_rest: always
+    use_python_keys: true
+    gather_subset:
+      - volume_info
+    parameters:
+      name: "*root"
+      svm.name: "{{svm_specs.svm_name}}"
+    fields:
+      - aggregates
+  register: rootvol_aggr
+  tags:
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Get the SVM root volume node information
+- name: Get the SVM root volume node information
+  netapp.ontap.na_ontap_rest_info:
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+    use_rest: always
+    use_python_keys: true
+    gather_subset:
+      - aggregate_info
+    parameters:
+      name: "{{ rootvol_aggr.ontap_info.storage_volumes.records[0].aggregates[0].name }}"
+    fields:
+      - node.name
+  register: node_name
+  tags:
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Create the aggregate list with aggregates hosted on SVM root volume node
+- name: Create the aggregate list with aggregates hosted on SVM root volume node
+  ansible.builtin.set_fact:
+    aggr_list: "{{ aggr_list | default([]) + [item.1.aggr_name] }}"
+  with_subelements:
+    - "{{ ha_pairs | map(attribute='node_specs') | flatten }}"
+    - data_aggregates
+  when:
+    - item.0.node_name == node_name.ontap_info.storage_aggregates.records[0].node.name
+    - item.1.aggr_name is defined and item.1.aggr_name != None
+  tags:
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Getting total count of data aggregates hosted on SVM root volume node
+- name: Get the total number of data aggregates created on SVM root volume node
+  ansible.builtin.set_fact:
+    aggr_count: "{{ aggr_list|length }}"
+  tags:
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Getting total count of data aggregates for creating LSM of SVM root volume
+- name: Get the total number of data aggregates for creating load-sharing mirrors for SVM root volume
+  ansible.builtin.set_fact:
+    final_count: "{{ (final_count|default(0)|int + total_aggr_count|int - aggr_count|int)|int }}"
+  tags:
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Create the LSM volumes name list
+- name: Create the load-sharing mirror volumes name list
+  ansible.builtin.set_fact:
+    lsm_vol_list: "{{ lsm_vol_list|default([]) + [ {'lsm_vol_name': item} ] }}"
+  with_sequence: start=1 end="{{ final_count }}" format={{ rootvol_aggr.ontap_info.storage_volumes.records[0].name }}_lsm0%1x
+  tags:
+    - ontap_ls_mirror_volumes
+    - ontap_snapmirror_relationship
+
+# Create the LSM aggr list variable
+- name: Create the load-sharing mirrors aggregate list variable
+  ansible.builtin.set_fact:
+    lsm_aggr_list: "{{ lsm_aggr_list|default([]) + [ {'lsm_aggr_name': item.aggr_name} ] }}"
+  with_items:
+    - "{{ ha_pairs | map(attribute='node_specs') | flatten | map(attribute='data_aggregates') | flatten }}"
+  when:
+    - item.aggr_name is defined and item.aggr_name != None
+    - item.aggr_name not in aggr_list
+  tags:
+    - ontap_ls_mirror_volumes
+
+# Create mirror volumes for the SVM root volume
+- name: Create the load-sharing mirror volumes for the SVM root volume
+  netapp.ontap.na_ontap_volume:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    name: "{{item.1.lsm_vol_name}}"
+    aggregate_name: "{{item.0.lsm_aggr_name}}"
+    size: 1
+    type: DP
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  with_together:
+    - "{{lsm_aggr_list}}"
+    - "{{lsm_vol_list}}"
+  tags:
+    - ontap_ls_mirror_volumes
+
+# Create Job schedule for the SVM root volume
+- name: Create a job schedule for the snapmirror of SVM root volume
+  netapp.ontap.na_ontap_job_schedule:
+    state: present
+    name: "{{item.job_name}}"
+    job_minutes: "{{item.job_minutes}}"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  with_items:
+    - "{{job_schedule}}"
+  tags:
+    - ontap_config_job_schedule
+
+# Create the SnapMirror relationship
+- name: Create the SnapMirror relationships
+  netapp.ontap.na_ontap_command:
+    command: "['snapmirror', 'create', '-source-path', '{{ svm_specs.svm_name }}:{{ rootvol_aggr.ontap_info.storage_volumes.records[0].name }}', '-destination-path', '{{ svm_specs.svm_name }}:{{ item.lsm_vol_name }}', '-type', 'LS', '-schedule', '{{ job_schedule.0.job_name }}']"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  with_items:
+    - "{{lsm_vol_list}}"
+  tags:
+    - ontap_snapmirror_relationship
+
+# Initialize the mirroring relationship
+- name: Initialize the mirroring relationship
+  netapp.ontap.na_ontap_command:
+    command: "['snapmirror', 'initialize-ls-set', '-source-path', '{{ svm_specs.svm_name }}:{{ rootvol_aggr.ontap_info.storage_volumes.records[0].name }}']"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  tags:
+    - ontap_snapmirror_relationship
+
+# Create and enable iSCSI service
+- name: Create and enable iSCSI service
+  netapp.ontap.na_ontap_iscsi:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    service_state: started
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  when: "('iscsi' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_enable_iscsi_service
+
+# Create and enable FCP service
+- name: Create and enable FCP service
+  netapp.ontap.na_ontap_fcp:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    status: up
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  when: "('fcp' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_enable_fcp_service
+
+# Create and enable NVMe service
+- name: Create and enable NVMe service
+  netapp.ontap.na_ontap_nvme:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    status_admin: true
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  when: "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_enable_nvme_service
+
+# Set the password for vsadmin first. Account cannot be unlocked without password
+- name: Set password for vsadmin user
+  netapp.ontap.na_ontap_user:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    applications: http,ontapi,ssh
+    authentication_method: password
+    role_name: vsadmin
+    lock_user: yes
+    name: vsadmin
+    set_password: "{{svm_specs.vsadmin_password}}"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  tags:
+    - ontap_unlock_vsadmin
+
+# Unlock vsadmin user
+- name: Unlock vsadmin user
+  netapp.ontap.na_ontap_user:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    applications: http,ontapi,ssh
+    authentication_method: password
+    role_name: vsadmin
+    lock_user: no
+    name: vsadmin
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  tags:
+    - ontap_unlock_vsadmin
+
+# Create login banner for the Storage Virtual Machine
+- name: Create login banner for the SVM
+  netapp.ontap.na_ontap_login_messages:
+    vserver: "{{item.svm_name}}"
+    banner: "{{item.svm_login_banner}}"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  with_items:
+    - "{{svm_specs}}"
+  tags:
+    - ontap_svm_login_banner
+
+# Remove insecure ciphers from the Storage Virtual Machine. Ciphers with the suffix CBC are considered insecure
+- name: Remove insecure ciphers from the SVM
+  netapp.ontap.na_ontap_rest_cli:
+    command: 'security/ssh/remove'
+    verb: 'POST'
+    body: {'ciphers': ['aes256-cbc','aes192-cbc','aes128-cbc','3des-cbc'], 'vserver': '{{svm_specs.svm_name}}'}
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  tags:
+    - ontap_svm_remove_insecure_ciphers

@@ -1,0 +1,42 @@
+---
+# Variables defined here are specific to Nexus9K-A for SAN Switching.
+#
+# Variables used to create port channel to UCS.
+  port_channel_id: 151
+  port_channel_speed: "auto" # Set to "auto" for FCoE port-channel and either "16000" or "32000" for FC port-channel
+  port_channel_duplex: "auto" # Used for FCoE Port Channel
+  port_channel_description: "AA02-6536-A"
+#
+#  VSAN number to use used for a the fabric being created
+  vsan_id: "{{ vsan_A_id }}"
+  vsan_name: "{{ vsan_A_name }}"
+#
+# Nexus Switch Interface List
+#
+  storage_interface_list:
+    - interface: "fc1/1"
+      description: "AA02-C800-01:2a"
+      speed: "32000"
+    - interface: "fc1/2"
+      description: "AA02-C800-01:2c"
+      speed: "32000"
+    - interface: "fc1/3"
+      description: "AA02-C800-02:2a"
+      speed: "32000"
+    - interface: "fc1/4"
+      description: "AA02-C800-02:2c"
+      speed: "32000"
+# Comment out the interfaces not being used below.
+  ucs_interface_list:
+#    - interface: "fc1/5"
+#      description: "AA02-6536-A:fc1/35/1"
+#    - interface: "fc1/6"
+#      description: "AA02-6536-A:fc1/35/2"
+#    - interface: "fc1/7"
+#      description: "AA02-6536-A:fc1/35/3"
+#    - interface: "fc1/8"
+#      description: "AA02-6536-A:fc1/35/4"
+    - interface: "Eth1/51"
+      description: "AA02-6536-A:Eth1/27"
+    - interface: "Eth1/52"
+      description: "AA02-6536-A:Eth1/28"

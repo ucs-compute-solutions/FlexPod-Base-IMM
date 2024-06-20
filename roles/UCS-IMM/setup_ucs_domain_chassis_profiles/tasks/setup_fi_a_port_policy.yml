@@ -1,0 +1,456 @@
+---
+
+- name: "Configure FI A Port Policy"
+  vars:
+    api_info: &api_fi_port
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  block:
+  - name: "FI A Port Policy"
+    cisco.intersight.intersight_rest_api:
+          <<: *api_fi_port
+          resource_path: /fabric/PortPolicies
+          query_params:
+             $filter: "Name eq '{{ name_of_fi_a_port_policy }}'"
+          api_body: {
+              "Name": "{{ name_of_fi_a_port_policy }}",
+              "Description": "{{ description_of_fi_a_port_policy }}",
+              "Organization": {
+                 "Moid": "{{ intersight_org.api_response.Moid }}"
+               },
+              "DeviceModel": "{{ fi_device_model }}",
+              Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}] 
+           }
+    register: fi_a_port_policy
+
+  - name: "Configure UCS 6536 FI A FC Breakout Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/PortModes
+        update_method: "post"
+        api_body: {
+            "CustomMode": "BreakoutFibreChannel{{ fc_breakout_speed }}G",
+	          "PortIdEnd": "{{ item }}",
+	          "PortIdStart": "{{ item }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "SlotId": 1
+        }
+    with_items: "{{ fc_6536_breakout_ports }}"
+    when: (configure_fc == 'true') and (configure_6536_fc_breakout == 'true')
+
+  - name: "Configure UCS 6400 FI A FC Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/PortModes
+        update_method: "post"
+        api_body: {
+	          "PortIdEnd": "{{ fc_6400_end_port }}",
+	          "PortIdStart": "{{ fc_6400_first_port }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "SlotId": 1
+        }
+    when: (configure_fc == 'true') and (configure_fc_6400_ports == 'true')
+
+  - name: "Configure UCS FI A Ethernet Breakout Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/PortModes
+        update_method: "post"
+        api_body: {
+	          "CustomMode": "BreakoutEthernet{{ eth_breakout_speed }}G",
+	          "PortIdEnd": "{{ item }}",
+	          "PortIdStart": "{{ item }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "SlotId": 1
+        }
+    with_items: "{{ fi_eth_breakout_ports }}"
+    when: configure_ethernet_breakouts == 'true'
+
+  - name: "Configure UCS FI A Full Server Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/ServerRoles
+        update_method: "post"
+        api_body: {
+	          "AutoNegotiationDisabled": false,
+	          "Fec": "Auto",
+	          "PortId": "{{ item }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "SlotId": 1
+        }
+    with_items: "{{ full_server_ports }}"
+    when: configure_full_server_ports == 'true'
+
+  - name: "Configure UCS FI A Breakout Server Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/ServerRoles
+        update_method: "post"
+        api_body: {
+	          "AggregatePortId": "{{ item[0] }}",
+            "AutoNegotiationDisabled": false,
+	          "Fec": "Auto",
+	          "PortId": "{{ item[1] }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "SlotId": 1
+        }
+    loop: "{{ breakout_server_ports }}"
+    when: configure_breakout_server_ports == 'true'
+
+  - name: "Configure 2-port Network Uplink Port Channel with Full Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/UplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "Auto",
+	          "Fec": "Auto",
+	          "LinkControlPolicy": "{{ udld_policy.api_response.Moid }}",
+	          "PcId": "{{ uplink_port_channel_id_full }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+			          "id": "port{{ uplink_port_channel_port_1 }}",
+			          "PortId": "{{ uplink_port_channel_port_1 }}",
+			          "SlotId": 1
+              },
+		          {
+			          "id": "port{{ uplink_port_channel_port_2 }}",
+			          "PortId": "{{ uplink_port_channel_port_2 }}",
+			          "SlotId": 1
+              } 
+	          ]
+        }
+    when: (configure_network_uplink_full_ports == 'true') and (num_ports_in_pc == 2)
+
+  - name: "Configure 4-port Network Uplink Port Channel with Full Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/UplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "Auto",
+	          "Fec": "Auto",
+	          "LinkControlPolicy": "{{ udld_policy.api_response.Moid }}",
+	          "PcId": "{{ uplink_port_channel_id_full }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+			          "id": "port{{ uplink_port_channel_port_1 }}",
+			          "PortId": "{{ uplink_port_channel_port_1 }}",
+			          "SlotId": 1
+              },
+		          {
+			          "id": "port{{ uplink_port_channel_port_2 }}",
+			          "PortId": "{{ uplink_port_channel_port_2 }}",
+			          "SlotId": 1
+              },
+		          {
+			          "id": "port{{ uplink_port_channel_port_3 }}",
+  		          "PortId": "{{ uplink_port_channel_port_3 }}",
+                "SlotId": 1
+              },
+		          {
+			          "id": "port{{ uplink_port_channel_port_4 }}",
+			          "PortId": "{{ uplink_port_channel_port_4 }}",
+                "SlotId": 1
+              }
+	          ]
+        }
+    when: (configure_network_uplink_full_ports == 'true') and (num_ports_in_pc == 4)
+
+  - name: "Configure 4-port Network Uplink Port Channel with Breakout Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/UplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "Auto",
+	          "Fec": "Auto",
+	          "LinkControlPolicy": "{{ udld_policy.api_response.Moid }}",
+	          "PcId": "{{ uplink_port_channel_id_breakout }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/1",
+			          "PortId": 1,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/2",
+			          "PortId": 2,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/3",
+			          "PortId": 3,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/4",
+			          "PortId": 4,
+			          "SlotId": 1
+              },
+	          ]
+        }
+    when: (configure_network_uplink_breakout_ports == 'true') and (num_breakout_ports_in_pc == 4)
+
+  - name: "Configure 8-port Network Uplink Port Channel with Breakout Ports"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/UplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "Auto",
+	          "Fec": "Auto",
+	          "LinkControlPolicy": "{{ udld_policy.api_response.Moid }}",
+	          "PcId": "{{ uplink_port_channel_id_breakout }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/1",
+			          "PortId": 1,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/2",
+			          "PortId": 2,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/3",
+			          "PortId": 3,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_1 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_1 }}/4",
+			          "PortId": 4,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_2 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_2 }}/1",
+			          "PortId": 1,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_2 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_2 }}/2",
+			          "PortId": 2,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_2 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_2 }}/3",
+			          "PortId": 3,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ uplink_port_channel_breakout_port_2 }}",
+                "id": "port{{ uplink_port_channel_breakout_port_2 }}/4",
+			          "PortId": 4,
+			          "SlotId": 1
+              }
+	          ]
+        }
+    when: (configure_network_uplink_breakout_ports == 'true') and (num_breakout_ports_in_pc == 8)
+
+  - name: "Configure 4-port UCS 6536 FI A FC Breakout Port Channel"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/FcUplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "{{ fc_breakout_speed }}Gbps",
+	          "PcId": "{{ fc_6536_breakout_pc_id }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/1",
+			          "PortId": 1,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/2",
+			          "PortId": 2,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/3",
+			          "PortId": 3,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/4",
+			          "PortId": 4,
+			          "SlotId": 1
+              }
+	          ],
+            "VsanId": "{{ vsan_A_id }}"
+        }
+    when: (configure_fc == 'true') and (configure_6536_fc_breakout_pc == 'true') and (num_6536_breakout_ports_in_pc == 4)
+
+  - name: "Configure 8-port UCS 6536 FI A FC Breakout Port Channel"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/FcUplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "{{ fc_breakout_speed }}Gbps",
+	          "PcId": "{{ fc_6536_breakout_pc_id }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/1",
+			          "PortId": 1,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/2",
+			          "PortId": 2,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/3",
+			          "PortId": 3,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_1 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_1 }}/4",
+			          "PortId": 4,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_2 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_2 }}/1",
+			          "PortId": 1,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_2 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_2 }}/2",
+			          "PortId": 2,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_2 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_2 }}/3",
+			          "PortId": 3,
+			          "SlotId": 1
+              },
+		          {
+			          "AggregatePortId": "{{ fc_6536_breakout_pc_root_port_2 }}",
+                "id": "port{{ fc_6536_breakout_pc_root_port_2 }}/4",
+			          "PortId": 4,
+			          "SlotId": 1
+              },
+	          ],
+            "VsanId": "{{ vsan_A_id }}"
+        }
+    when: (configure_fc == 'true') and (configure_6536_fc_breakout_pc == 'true') and (num_6536_breakout_ports_in_pc == 8)
+
+  - name: "Configure 2-port FC Uplink Port-Channel on UCS-FI-6400"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/FcUplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "{{ fc_6400_fc_speed }}Gbps",
+	          "PcId": "{{ fc_6400_pc_id }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+                "id": "port{{ fc_6400_pc_port_1 }}",
+			          "PortId": "{{ fc_6400_pc_port_1 }}",
+			          "SlotId": 1
+              },
+		          {
+                "id": "port{{ fc_6400_pc_port_2 }}",
+			          "PortId": "{{ fc_6400_pc_port_2 }}",
+			          "SlotId": 1
+              }
+	          ],
+            "VsanId": "{{ vsan_A_id }}"
+        }
+    when: (configure_fc == 'true') and (configure_fc_6400_pc == 'true') and (fc_6400_num_ports_in_pc == 2)
+
+  - name: "Configure 4-port FC Uplink Port-Channel on UCS-FI-6400"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/FcUplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "{{ fc_6400_fc_speed }}Gbps",
+	          "PcId": "{{ fc_6400_pc_id }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+                "id": "port{{ fc_6400_pc_port_1 }}",
+			          "PortId": "{{ fc_6400_pc_port_1 }}",
+			          "SlotId": 1
+              },
+		          {
+                "id": "port{{ fc_6400_pc_port_2 }}",
+			          "PortId": "{{ fc_6400_pc_port_2 }}",
+			          "SlotId": 1
+              },
+              {
+                "id": "port{{ fc_6400_pc_port_3 }}",
+                "PortId": "{{ fc_6400_pc_port_3 }}",
+                "SlotId": 1
+              },
+              {
+                "id": "port{{ fc_6400_pc_port_4 }}",
+                "PortId": "{{ fc_6400_pc_port_4 }}",
+                "SlotId": 1
+              }
+	          ],
+            "VsanId": "{{ vsan_A_id }}"
+        }
+    when: (configure_fc == 'true') and (configure_fc_6400_pc == 'true') and (fc_6400_num_ports_in_pc == 4)
+
+  - name: "Configure FCoE Uplink Port Channel"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_port
+        resource_path: /fabric/FcoeUplinkPcRoles
+        update_method: "post"
+        api_body: {
+	          "AdminSpeed": "Auto",
+	          "Fec": "Auto",
+	          "LinkControlPolicy": "{{ udld_policy.api_response.Moid }}",
+	          "PcId": "{{ fcoe_uplink_pc_id }}",
+	          "PortPolicy": "{{ fi_a_port_policy.api_response.Moid }}",
+	          "Ports": [
+		          {
+			          "id": "port{{ fcoe_uplink_pc_port_1 }}",
+			          "PortId": "{{ fcoe_uplink_pc_port_1 }}",
+			          "SlotId": 1
+              },
+		          {
+			          "id": "port{{ fcoe_uplink_pc_port_2 }}",
+			          "PortId": "{{ fcoe_uplink_pc_port_2 }}",
+			          "SlotId": 1
+              }
+	          ]
+      }
+    when: (configure_fc == 'true') and (configure_fcoe_uplink_pc == 'true')

@@ -1,0 +1,135 @@
+---
+# This task sets up the interface, their speeds and port-channel
+#
+  # This task sets the UCS FCoE ports to L2 and enables interfaces
+  - name: Enabling all ethernet interfaces
+    cisco.nxos.nxos_interfaces:
+      config:
+        - name: "{{ item.interface }}"
+          description: "{{ item.description }}:FCoE"
+          mode: layer2
+          enabled: yes
+    with_list: "{{ ucs_interface_list }}"
+    when: nss_fi_pc_type == 'FCoE'
+#
+  # This task sets the UCS FCoE port-channel to L2 and enables it
+  - name: Enabling UCS FCoE port-channel
+    cisco.nxos.nxos_interfaces:
+      config:
+        - name: "Po{{ port_channel_id }}"
+          description: "{{ port_channel_description }}:FCoE"
+          mode: layer2
+          enabled: yes
+    when: nss_fi_pc_type == 'FCoE'
+#
+  # This task enables normal UDLD on the UCS FCoE interfaces
+  - name: Enable normal UDLD on the UCS FCoE interfaces
+    cisco.nxos.nxos_udld_interface:
+      interface: "{{ item.interface }}"
+      mode: enabled
+    with_list: "{{ ucs_interface_list }}"
+    when: nss_fi_pc_type == 'FCoE'
+#
+  # This task adds ports to the UCS FCoE port-channel
+  - name: Add Ports to UCS FCoE port-channel
+    cisco.nxos.nxos_command:
+      commands:
+      - config t
+      - int {{ item.interface }}
+      - channel-group {{ port_channel_id }} mode active
+      - exit
+#        - name: "Po{{ port_channel_id }}"
+#          members:
+#            - member: "{{ item.interface }}"
+#              mode: active
+    with_list: "{{ ucs_interface_list }}"
+    when: nss_fi_pc_type == 'FCoE'
+#
+# This task sets up speed, duplex and mtu settings for the UCS FCoE port-channel
+  - name: Modify the mtu speed and duplex for UCS FCoE port-channel
+    cisco.nxos.nxos_interfaces:
+      config:
+        - name: "Po{{ port_channel_id }}"
+          mtu: "9216"
+          speed: "{{ port_channel_speed }}"
+          duplex: "{{ port_channel_duplex }}"
+    when: nss_fi_pc_type == 'FCoE'
+#
+# Configure Trunk VLANs for UCS FCoE Port-Channel
+#
+  - name: Enabling all vlans on UCS FCoE Port-Channel
+    cisco.nxos.nxos_l2_interfaces:
+      config:
+        - name: "Po{{ port_channel_id }}"
+          trunk:
+            native_vlan: "{{ native_vlan_id }}"
+            allowed_vlans: "{{ vsan_id }}"
+    when: nss_fi_pc_type == 'FCoE'
+#
+# Set remaining parameters on UCS FCoE Port-Channel
+#
+  - name: Set remaining parameters on UCS FCoE Port-Channel
+    cisco.nxos.nxos_command:
+      commands:
+      - config t
+      - int Po{{ port_channel_id }}
+      - switchport mode trunk
+      - spanning-tree port type edge trunk
+      - service-policy type qos input default-fcoe-in-policy
+      - exit
+    when: nss_fi_pc_type == 'FCoE'  
+#
+# Setup vfc interface bound to UCS FCoE Port-Channel
+#
+  - name: Setup vfc interface bound to UCS FCoE Port-Channel
+    cisco.nxos.nxos_command:
+      commands:
+      - config t
+      - int vfc{{ port_channel_id }}
+      - bind interface port-channel{{ port_channel_id }}
+      - command: switchport trunk allowed vsan {{ vsan_id }}
+        prompt: Do you want to continue?
+        answer: y
+      - switchport description {{ port_channel_description }}:FCoE
+      - switchport trunk mode on
+      - no shutdown
+      - exit
+    when: nss_fi_pc_type == 'FCoE'
+#
+  - name: Set Nexus UCS FC Port-Channel Interface
+    cisco.nxos.nxos_command:
+      commands:
+      - config t
+      - int san-port-channel {{ port_channel_id }}
+      - channel mode active
+      - switchport mode F
+      - switchport trunk mode auto
+      - command: switchport trunk allowed vsan {{ vsan_id }}
+        prompt: Do you want to continue?
+        answer: y
+      - switchport speed {{ port_channel_speed }}
+      - switchport description {{ port_channel_description }}
+      - exit
+    when: nss_fi_pc_type == 'FC'
+#
+  - name: Set Nexus FC Interfaces for UCS FC Port-Channel Interface
+    cisco.nxos.nxos_config:
+      lines:
+        - no shutdown
+        - port-license acquire
+        - switchport description {{ item.description }}
+        - channel-group {{ port_channel_id }} force
+      parents: interface {{ item.interface }}
+    with_list: "{{ ucs_interface_list }}"
+    when: nss_fi_pc_type == 'FC'
+#
+  - name: Set Nexus FC Interfaces for Storage Controllers
+    cisco.nxos.nxos_config:
+      lines:
+        - no shutdown
+        - port-license acquire
+        - switchport trunk mode off
+        - switchport speed {{ item.speed }}
+        - switchport description {{ item.description }}
+      parents: interface {{ item.interface }}
+    with_list: "{{ storage_interface_list }}"

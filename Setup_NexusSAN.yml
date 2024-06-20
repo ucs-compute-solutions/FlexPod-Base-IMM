@@ -1,0 +1,13 @@
+---
+# Playbook: Configure Nexus 93180YC-FX or 93360YC-FX2 for SAN Switching, assuming that the Ethernet
+# switching part has already been done. 
+- hosts: nss
+  connection: network_cli
+  gather_facts: no
+  vars_files:
+    - group_vars/secrets.yml
+
+  roles:
+    ### Configure Nexus SAN Switching
+    #
+    - NEXUSSANconfig

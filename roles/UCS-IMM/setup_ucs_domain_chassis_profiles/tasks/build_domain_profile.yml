@@ -1,0 +1,314 @@
+---
+- name: "Build Domain Profile"
+  vars:
+    api_info: &api_info_domain_profile
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  block:
+    - name: "Build UCS Domain Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /fabric/SwitchClusterProfiles
+        query_params:
+          $filter: "Name eq '{{ name_of_ucs_domain_profile }}'"
+        api_body: {
+          "Name": "{{ name_of_ucs_domain_profile }}",
+          "Description": "{{ description_of_ucs_domain_profile }}",
+          "Organization": {
+            "Moid": "{{ intersight_org.api_response.Moid }}"
+          },
+          Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}]
+        }
+      register: ucs_domain_profile
+
+    - name: "Build UCS Switch A Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /fabric/SwitchProfiles
+        query_params:
+          $filter: "Name eq '{{ name_of_ucs_domain_profile }}-A'"
+        api_body: {
+          "Name": "{{ name_of_ucs_domain_profile }}-A",
+          "Description": "{{ description_of_ucs_domain_profile }}",
+          "SwitchClusterProfile": "{{ ucs_domain_profile.api_response.Moid }}"
+        }
+      register: ucs_switch_profile_a
+
+    - name: "Build UCS Switch B Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /fabric/SwitchProfiles
+        query_params:
+          $filter: "Name eq '{{ name_of_ucs_domain_profile }}-B'"
+        api_body: {
+          "Name": "{{ name_of_ucs_domain_profile }}-B",
+          "Description": "{{ description_of_ucs_domain_profile }}",
+          "SwitchClusterProfile": "{{ ucs_domain_profile.api_response.Moid }}"
+        }
+      register: ucs_switch_profile_b
+
+    - name: "Assign VLAN Policy to Switch A Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ fi_vlan_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.EthNetworkPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_a.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+
+    - name: "Assign VLAN Policy to Switch B Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ fi_vlan_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.EthNetworkPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_b.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+
+    - name: "Assign VSAN-A Policy to Switch A Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ fi_vsan_a_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.FcNetworkPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_a.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+      when: configure_fc == 'true'
+
+    - name: "Assign VSAN-B Policy to Switch B Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ fi_vsan_b_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.FcNetworkPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_b.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+      when: configure_fc == 'true'
+
+    - name: "Assign Port Policy A to Switch A Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ fi_a_port_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.PortPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_a.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+
+    - name: "Assign Port Policy B to Switch B Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ fi_b_port_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.PortPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_b.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+
+    - name: "Assign NTP Policy to Both Switch Profiles"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ ntp_policy.api_response.Moid }}",
+					        "ObjectType": "ntp.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_a.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        },
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ ntp_policy.api_response.Moid }}",
+					        "ObjectType": "ntp.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_b.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+
+    - name: "Assign Network Connectivity Policy to Both Switch Profiles"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ netconn_policy.api_response.Moid }}",
+					        "ObjectType": "networkconfig.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_a.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        },
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ netconn_policy.api_response.Moid }}",
+					        "ObjectType": "networkconfig.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_b.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+
+    - name: "Assign SNMP Policy to Both Switch Profiles"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ snmp_policy.api_response.Moid }}",
+					        "ObjectType": "snmp.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_a.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        },
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ snmp_policy.api_response.Moid }}",
+					        "ObjectType": "snmp.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_b.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+      when: configure_snmpv3 == true
+
+    - name: "Assign System QoS Policy to Both Switch Profiles"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_domain_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ qos_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.SystemQosPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_a.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        },
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ qos_policy.api_response.Moid }}",
+					        "ObjectType": "fabric.SystemQosPolicy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_switch_profile_b.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/fabric/SwitchProfiles",
+			        "Verb": "POST"
+		        }
+	        ]
+        }
+

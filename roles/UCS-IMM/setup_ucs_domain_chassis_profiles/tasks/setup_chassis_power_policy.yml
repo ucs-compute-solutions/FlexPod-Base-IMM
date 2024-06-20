@@ -1,0 +1,29 @@
+---
+- name: "Create UCS Chassis Power Policy"
+  vars:
+    api_info: &api_info_power
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  cisco.intersight.intersight_rest_api:
+      <<: *api_info_power
+      resource_path: /power/Policies
+      query_params:
+         $filter: "Name eq '{{ name_of_chassis_power_policy }}'"
+      api_body: {
+        "AllocatedBudget": 0,
+        "DynamicRebalancing": "Enabled",
+        "ExtendedPowerCapacity": "Enabled",
+        "Name": "{{ name_of_chassis_power_policy }}",
+        "Description": "{{ description_of_chassis_power_policy }}",
+        "Organization": {
+           "Moid": "{{ intersight_org.api_response.Moid }}"
+        },
+        "PowerSaveMode": "Enabled",
+        "RedundancyMode": "Grid",
+        Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}]
+	    }
+  register: chassis_power_policy

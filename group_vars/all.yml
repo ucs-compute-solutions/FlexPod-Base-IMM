@@ -1,0 +1,63 @@
+# This is the top-level variable file that will be used for the Base FlexPod setup. It is setup in this case to configure FC in the environment.
+# For Base FlexPod, we only need to set whether FC is configured or not. If FC is configured, we are assuming that either Cisco MDS or Nexus 
+# switches are being used for FC SAN Switching.
+# Setting the following variables to anything but 'true' ('false' is suggested when not using 'true'), will cause the 
+# protocol to not be configured.
+
+configure_fc: 'true'
+
+# Update the the following lines to setup NTP Server(s)
+# Note that the Nexus switches can be used to distribute NTP within the FlexPod and keep most NTP queries within the pod. When Nexus NTP distribution is setup, all L3 interfaces on the switch can be queried as NTP servers, including the IPs on the mgmt0 ports. In this FlexPod setup, the mgmt0 ports in the OOB-MGMT VLAN are setup along with SVI interfaces in the IB-MGMT VLAN to allow physical devices, ESXi hosts, and VMs to query NTP within the VLAN and within the pod.
+use_nexus_ntp_distribution: 'true' # If not using Nexus NTP distribution, set this to 'false'.
+global_NTP_servers:   # These are the Global NTP servers from outside the FlexPod (normally 2 or more).
+  - "10.102.0.251"
+  - "10.102.0.252"
+ntp_servers:  # The first two entries here are the Nexus mgmt0 OOB-MGMT IPs. The third entry is a global NTP server because NetApp ONTAP requires three NTP servers. If not using Nexus NTP distribution, set all three of these still needed values to global NTP servers.
+  - ip_address: "10.102.0.3"
+  - ip_address: "10.102.0.4"
+  - ip_address: "10.102.0.254"
+
+# Switch Time Zone info for Nexus and MDS switches
+switch_timezone_command: "clock timezone EST -5 0" # clock timezone zone-name offset-hours offset-minutes
+summer_time_command: "clock summer-time EDT 2 Sunday March 02:00 1 Sunday November 02:00 60" # clock summer-time zone-name start-week start-day start-month start-time end-week end-day end-month end-time offset-minutes
+
+# Update the the following lines to setup DNS Server(s)
+# Note: The Nexus and MDS scripts assume exactly 2 DNS servers.
+dns_servers:
+  - ip_address: "10.102.1.151"
+  - ip_address: "10.102.1.152"
+
+# DNS Domain Name
+dns_domain_name: "flexpodb4.cisco.com"
+
+# Update the the following line to setup Timezone
+time_zone: 'America/New_York'
+
+# SNMP 
+configure_snmpv3: true # If set to true, will configure snmpv3 with the info below in the Nexus and MDS switches, NetApp Storage, and UCS FIs.
+global_snmp_user_name: "snmpadmin"
+global_snmp_auth_password: "{{ password_1 }}"
+global_snmp_priv_password: "{{ password_1 }}"
+global_snmp_contact: "<email-address>"
+global_snmp_location: "Cisco RTP Building 4, Lab 141A, AA02"
+
+# This is the list of all the VLANs that will be defined on Nexus, Storage, and UCS.
+# VLAN Names are adjustable and can be modified in here
+# For FlexPod Base, only the OOB-MGMT VLAN is used.
+#
+native_vlan_name: 'Native-Vlan' # Native VLAN
+native_vlan_id: 2
+oob_vlan_name: 'OOB-MGMT' # Out of Band Mgmt VLAN piped in through switches to UCS
+oob_vlan_id: 1020
+#
+#VSAN Parameters
+#
+enable_vsan_trunking: true # Enable VSAN trunking between the FIs and Storage Switch. Set to true or false.
+#
+vsan_A_name: 'FlexPod-Fabric-A'
+vsan_A_id: 101
+vsan_A_fcoe_vlan: 101
+#
+vsan_B_name: 'FlexPod-Fabric-B'
+vsan_B_id: 102
+vsan_B_fcoe_vlan: 102

@@ -1,0 +1,25 @@
+---
+- name: "Create UCS Chassis Thermal Policy"
+  vars:
+    api_info: &api_info_thermal
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  cisco.intersight.intersight_rest_api:
+      <<: *api_info_thermal
+      resource_path: /thermal/Policies
+      query_params:
+         $filter: "Name eq '{{ name_of_chassis_thermal_policy }}'"
+      api_body: {
+        "FanControlMode": Balanced,
+        "Name": "{{ name_of_chassis_thermal_policy }}",
+        "Description": "{{ description_of_chassis_thermal_policy }}",
+        "Organization": {
+           "Moid": "{{ intersight_org.api_response.Moid }}"
+        },
+        Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}]
+      }
+  register: chassis_thermal_policy

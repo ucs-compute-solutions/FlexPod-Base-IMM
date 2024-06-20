@@ -1,0 +1,104 @@
+---
+# Create NVMe namespace
+- name: Create NVMe namespace
+  netapp.ontap.na_ontap_nvme_namespace:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    path: /vol/{{item.residing_vol}}/{{item.name}}
+    size: "{{item.size}}"
+    size_unit: gb
+    ostype: "{{svm_specs.os_type}}"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  with_items:
+    - "{{ svm_specs.nvme_namespaces }}"
+  when: "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_create_nvme_namespace
+
+# Create the host NQNs list for FC-NVMe config
+- name: Create the host NQNs list for FC-NVMe config
+  ansible.builtin.set_fact:
+    fc_nvme_nqn: "{{ fc_nvme_nqn | default([]) + [item.nvme_nqn] }}"
+  with_items:
+    - "{{ fc_esxi_hosts }}"
+  when:
+    - "('fcp' in svm_specs.allowed_protocols)"
+    - "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_create_nvme_subsystem
+
+# Create the host NQNs list for NVMe/TCP config
+- name: Create the host NQNs list for NVMe/TCP config
+  ansible.builtin.set_fact:
+    nvme_tcp_nqn: "{{ nvme_tcp_nqn | default([]) + [item.nvme_nqn] }}"
+  with_items:
+    - "{{ iscsi_esxi_hosts }}"
+  when:
+    - "('iscsi' in svm_specs.allowed_protocols)"
+    - "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_create_nvme_subsystem
+
+# Create the final host NQNs list to be added to the NVMe subsystem
+- name: Create the final host NQNs list to be added to the NVMe subsystem
+  ansible.builtin.set_fact:
+    nvme_nqns: "{{ fc_nvme_nqn | default([]) + nvme_tcp_nqn | default([]) }}"
+  when: "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_create_nvme_subsystem
+
+# See the host NQNs list
+- name: See the host NQNs list
+  ansible.builtin.debug: var=nvme_nqns
+  when: "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_create_nvme_subsystem
+
+# Create NVMe subsystem and add the host NQNs to the NVMe subsystem
+- name: Create NVMe subsystem and add the host NQNs to the subsystem
+  netapp.ontap.na_ontap_nvme_subsystem:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    subsystem: "{{svm_specs.nvme_subsystem}}"
+    hosts: "{{nvme_nqns}}"
+    ostype: "{{svm_specs.os_type}}"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  when: "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_create_nvme_subsystem
+
+# Getting the list of Namespace paths to be associated with the subsystem
+- name: Get the list of Namespace paths to be associated with the subsystem
+  ansible.builtin.set_fact:
+    ns_paths_list: "{{ ns_paths_list | default([]) + [''.join(('/vol/', item.residing_vol, '/', item.name))] }}"
+  with_items:
+    - "{{ svm_specs.nvme_namespaces }}"
+  when:
+    - "('nvme' in svm_specs.allowed_protocols)"
+    - item is defined and item != None
+  tags:
+    - ontap_map_namespace_to_subsystem
+
+# Map the namespaces to the NVMe subsystem
+- name: Map the namespaces to the NVMe subsystem
+  netapp.ontap.na_ontap_nvme_subsystem:
+    state: present
+    vserver: "{{svm_specs.svm_name}}"
+    subsystem: "{{svm_specs.nvme_subsystem}}"
+    paths: "{{ns_paths_list}}"
+    hostname: "{{inventory_hostname}}"
+    username: "{{username}}"
+    password: "{{password}}"
+    https: true
+    validate_certs: false
+  when: "('nvme' in svm_specs.allowed_protocols)"
+  tags:
+    - ontap_map_namespace_to_subsystem

@@ -1,0 +1,49 @@
+---
+# This task sets up the VLAN/VSAN configuration for both Nexus switches with
+# specific variables from the n9kSSA/B variables files
+# This procedure assumes the FCoE VLAN and VSAN are the same value.
+#
+  - name: Create FCoE VLAN
+    cisco.nxos.nxos_command:
+      commands:
+      - config t
+      - vlan {{ vsan_id }}
+      - fcoe vsan {{ vsan_id }}
+      - name FCoE-VLAN
+      - exit
+    when: nss_fi_pc_type == 'FCoE'
+
+  - name: Nexus VSAN - Create VSAN and Add vfc interface
+    cisco.nxos.nxos_vsan:
+      vsan:
+        - id: "{{ vsan_id }}"
+          name: "{{ vsan_name }}"
+          interface:
+            - vfc {{ port_channel_id }}
+          remove: False
+    when: nss_fi_pc_type == 'FCoE'
+
+  - name: Nexus VSAN - Create VSAN and Add SAN Port-Channel
+    cisco.nxos.nxos_vsan:
+      vsan:
+        - id: "{{ vsan_id }}"
+          name: "{{ vsan_name }}"
+          interface:
+            - san-port-channel {{ port_channel_id }}
+          remove: False
+    when: nss_fi_pc_type == 'FC'
+#
+  - name: Nexus VSAN - Add storage ports
+    cisco.nxos.nxos_vsan:
+      vsan:
+        - id: "{{ vsan_id }}"
+#          name: "{{ vsan_name}}"
+          interface:
+            - "{{ item.interface }}"
+          remove: False
+    with_list: "{{ storage_interface_list }}"
+#
+  - name: Nexus VSAN - Configure Smart Zoning
+    cisco.nxos.nxos_config:
+      lines:
+        - zone smart-zoning enable vsan {{ vsan_id }}

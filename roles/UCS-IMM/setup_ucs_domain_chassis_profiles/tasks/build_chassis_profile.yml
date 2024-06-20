@@ -1,0 +1,69 @@
+---
+- name: "Build Chassis Profile"
+  vars:
+    api_info: &api_info_chassis_profile
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  block:
+    - name: "Build UCS Chassis Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_chassis_profile
+        resource_path: /chassis/Profiles
+        query_params:
+          $filter: "Name eq '{{ name_of_ucs_chassis_profile }}'"
+        api_body: {
+          "Name": "{{ name_of_ucs_chassis_profile }}",
+          "Description": "{{ description_of_ucs_chassis_profile }}",
+          "Organization": {
+            "Moid": "{{ intersight_org.api_response.Moid }}"
+          },
+          Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}]
+        }
+      register: ucs_chassis_profile
+
+    - name: "Assign Power Policy to Chassis Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_chassis_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ chassis_power_policy.api_response.Moid }}",
+					        "ObjectType": "power.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_chassis_profile.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/chassis/Profiles",
+			        "Verb": "POST"
+		        }
+	        ]
+				}
+
+    - name: "Assign Thermal Policy to Chassis Profile"
+      cisco.intersight.intersight_rest_api:
+        <<: *api_info_chassis_profile
+        resource_path: /bulk/Requests
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": [
+				        {
+					        "Moid": "{{ chassis_thermal_policy.api_response.Moid }}",
+					        "ObjectType": "thermal.Policy"
+				        }
+			        ],
+			        "ObjectType": "bulk.RestSubRequest",
+			        "TargetMoid": "{{ ucs_chassis_profile.api_response.Moid }}/PolicyBucket",
+			        "Uri": "/v1/chassis/Profiles",
+			        "Verb": "POST"
+		        }
+	        ]
+				}
+ 

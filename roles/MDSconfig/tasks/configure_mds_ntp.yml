@@ -1,0 +1,14 @@
+---
+  # This Task enables Nexus 9K NTP Distribution for the FlexPod
+  
+  - name: Set First NTP Server
+    cisco.nxos.nxos_ntp_global:
+      config:
+        servers:
+          - server: "{{ ntp_servers[0].ip_address }}"
+
+  - name: Set Second NTP Server
+    cisco.nxos.nxos_ntp_global:
+      config:
+        servers:
+          - server: "{{ ntp_servers[1].ip_address }}"

@@ -1,0 +1,11 @@
+---
+  # Configuration Role for Nexus 93180YC-FX or 93360YC-FX SAN. 
+  #
+  # Configure Features
+  - include_tasks: configure_mds_features.yml
+  # Configure Interface, Port-Channel and Trunk Settings
+  - include_tasks: configure_mds_interfaces.yml
+  # Configure vsan
+  - include_tasks: configure_mds_vsans.yml
+  # Save Configuration
+  - include_tasks: save_mds_config.yml

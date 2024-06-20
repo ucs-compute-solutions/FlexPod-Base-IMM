@@ -1,0 +1,9 @@
+---
+  # This task configures breakout ports
+  - name: Configure breakout ports
+    cisco.nxos.nxos_command:
+      commands:
+        - config terminal
+        - interface breakout module 1 port {{ item }} map {{ breakout_map }}
+    with_list: "{{ breakout_ports }}"
+    when: configure_breakouts == 'true'

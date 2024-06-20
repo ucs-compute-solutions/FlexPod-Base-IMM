@@ -1,0 +1,25 @@
+---
+- name: "Create UCS Domain NTP Policy"
+  vars:
+    api_info: &api_info_ntp
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  cisco.intersight.intersight_ntp_policy:
+      <<: *api_info_ntp
+      organization: "{{ org_name }}"
+      name: "{{ name_of_ntp_policy }}"
+      description: "{{ description_of_ntp_policy }}"
+      tags: 
+        - Key: "configmode" 
+          Value: "ansible"
+        - Key: "prefix"
+          Value: "{{ prefix }}"
+      ntp_servers:
+        - "{{ ntp_servers[0].ip_address }}"
+        - "{{ ntp_servers[1].ip_address }}"
+      timezone: "{{ ucs_timezone }}"
+  register: ntp_policy

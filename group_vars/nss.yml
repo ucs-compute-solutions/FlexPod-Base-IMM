@@ -1,0 +1,13 @@
+---
+ansible_connection: network_cli
+ansible_network_os: nxos
+#
+provider_ssh:
+  host: "{{ ansible_host }}"
+  username: "{{ ansible_username }}"
+  password: "{{ ansible_password }}"
+  transport: network_cli
+#
+backup_dir: "~/"
+#
+nss_fi_pc_type: 'FCoE' # The type of port-channel between the FIs and Nexus Switches. Set to either 'FCoE' or 'FC'

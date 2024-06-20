@@ -1,0 +1,86 @@
+---
+- name: "Create System QoS Policy"
+  vars:
+    api_info: &api_info_qos
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  cisco.intersight.intersight_rest_api:
+      <<: *api_info_qos
+      resource_path: /fabric/SystemQosPolicies
+      query_params:
+         $filter: "Name eq '{{ name_of_system_qos_policy }}'"
+      api_body: {
+        "Name": "{{ name_of_system_qos_policy }}",
+        "Description": "{{ description_of_system_qos_policy }}",
+        "Organization": {
+           "Moid": "{{ intersight_org.api_response.Moid }}"
+        },
+        Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}],
+        "Classes": [
+		      {
+			      "AdminState": "Disabled",
+			      "BandwidthPercent": 0,
+			      "Cos": 1,
+			      "Mtu": 1500,
+			      "MulticastOptimize": false,
+			      "Name": "Bronze",
+			      "PacketDrop": true,
+            "Weight": 7
+          },
+		      {
+			      "AdminState": "Disabled",
+			      "BandwidthPercent": 0,
+			      "Cos": 2,
+			      "Mtu": 1500,
+			      "MulticastOptimize": false,
+			      "Name": "Silver",
+			      "PacketDrop": true,
+			      "Weight": 8
+          },
+		      {
+			      "AdminState": "Disabled",
+			      "BandwidthPercent": 0,
+			      "Cos": 4,
+			      "Mtu": 1500,
+			      "MulticastOptimize": false,
+			      "Name": "Gold",
+			      "PacketDrop": true,
+			      "Weight": 9
+          },
+		      {
+			      "AdminState": "Disabled",
+			      "BandwidthPercent": 0,
+			      "Cos": 5,
+			      "Mtu": 1500,
+			      "MulticastOptimize": false,
+			      "Name": "Platinum",
+			      "PacketDrop": true,
+			      "Weight": 10
+          },
+		      {
+			      "AdminState": "Enabled",
+			      "BandwidthPercent": 50,
+			      "Cos": 255,
+			      "Mtu": 9216,
+			      "MulticastOptimize": false,
+			      "Name": "Best Effort",
+			      "PacketDrop": true,
+			      "Weight": 5
+          },
+		      {
+			      "AdminState": "Enabled",
+			      "BandwidthPercent": 50,
+			      "Cos": 3,
+			      "Mtu": 2240,
+			      "MulticastOptimize": false,
+			      "Name": "FC",
+			      "PacketDrop": false,
+			      "Weight": 5
+          }
+	      ]
+      }
+  register: qos_policy

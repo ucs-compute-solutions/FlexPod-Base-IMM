@@ -1,0 +1,43 @@
+---
+# Variables defined here are specific to MDS-B
+#
+# Variables used to create port channel to UCS.
+  port_channel_id: 15
+  port_channel_speed: "32000"
+  port_channel_description: "AA02-6536-B"
+#
+#  VSAN number to use used for a the fabric being created
+  vsan_id: "{{ vsan_B_id }}"
+  vsan_name: "{{ vsan_B_name }}"
+#
+# MDS Switch FC Interface List
+#
+  storage_interface_list:
+    - interface: "fc1/1"
+      description: "AA02-C800-01:2b"
+      speed: "32000"
+    - interface: "fc1/2"
+      description: "AA02-C800-02:2b"
+      speed: "32000"
+    - interface: "fc1/3"
+      description: "AA02-C800-01:2d"
+      speed: "32000"
+    - interface: "fc1/4"
+      description: "AA02-C800-02:2d"
+      speed: "32000"
+#
+  ucs_interface_list:
+    - interface: "fc1/5"
+      description: "AA02-6536-B:fc1/35/1"
+      speed: "32000"
+    - interface: "fc1/6"
+      description: "AA02-6536-B:fc1/35/2"
+      speed: "32000"
+    - interface: "fc1/7"
+      description: "AA02-6536-B:fc1/35/3"
+      speed: "32000"
+    - interface: "fc1/8"
+      description: "AA02-6536-B:fc1/35/4"
+      speed: "32000"
+
+

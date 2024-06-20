@@ -1,0 +1,42 @@
+---
+- name: "Create SNMP Policy"
+  vars:
+    api_info: &api_info_snmp
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  cisco.intersight.intersight_rest_api:
+      <<: *api_info_snmp
+      resource_path: /snmp/Policies
+      query_params:
+         $filter: "Name eq '{{ name_of_snmp_policy }}'"
+      api_body: {
+        "Name": "{{ name_of_snmp_policy }}",
+        "Description": "{{ description_of_snmp_policy }}",
+        "Organization": {
+           "Moid": "{{ intersight_org.api_response.Moid }}"
+        },
+        Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}],
+        "CommunityAccess": "Disabled",
+        "Enabled": true,
+        "SnmpPort": 161,
+        "SnmpTraps": [],
+        "SnmpUsers": [
+          {
+            "AuthPassword": "{{ global_snmp_auth_password }}",
+            "AuthType": "SHA",
+            "Name": "{{ global_snmp_user_name }}",
+            "PrivacyPassword": "{{ global_snmp_priv_password }}",
+            "PrivacyType": "AES",
+            "SecurityLevel": "AuthPriv"
+		      }
+	      ],
+        "SysContact": "{{ global_snmp_contact }}",
+        "SysLocation": "{{ global_snmp_location }}",
+        "V2Enabled": false,
+        "V3Enabled": true
+      }
+  register: snmp_policy

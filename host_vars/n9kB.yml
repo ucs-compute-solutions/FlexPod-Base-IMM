@@ -1,0 +1,34 @@
+---
+vpc_source: "{{ hostvars['n9kB'].ansible_host }}"
+vpc_destination: "{{ hostvars['n9kA'].ansible_host }}"
+vpc_role_priority: "20"
+
+# Interface Lists; more interfaces can be added for additional BW
+#
+uplink_interface_list:
+  - interface: "Ethernet1/27"
+    description: "AA02-93180-B:Eth1/53"
+
+peerlink_interface_list:
+  - interface:  "Ethernet1/25"
+    description: "AA02-93600-A:Eth1/25"
+  - interface:  "Ethernet1/26"
+    description: "AA02-93600-A:Eth1/26"
+#
+FI_A_interface_list:
+  - interface:  "Ethernet1/5"
+    description: "AA02-6536-A:Eth1/32"
+#
+FI_B_interface_list:
+  - interface:  "Ethernet1/6"
+    description: "AA02-6536-B:Eth1/32"
+#
+storage_A_interface_list:
+  - interface:  "Ethernet1/1"
+    description: "AA02-C800-01:e5b"
+#
+storage_B_interface_list:
+  - interface:  "Ethernet1/2"
+    description: "AA02-C800-02:e5b"
+#
+all_interfaces: "{{ uplink_interface_list + peerlink_interface_list + FI_A_interface_list + FI_B_interface_list + storage_A_interface_list + storage_B_interface_list }}"

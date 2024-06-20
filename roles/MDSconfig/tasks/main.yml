@@ -1,0 +1,27 @@
+---
+  # Configuration Role for MDS. 
+  #
+  # Configure Features
+  - include_tasks: configure_mds_features.yml
+    when: configure_fc == 'true'
+  # Configure DNS Client
+  - include_tasks: configure_domain_lookup.yml
+    when: configure_fc == 'true'
+  # Configure NTP Servers
+  - include_tasks: configure_mds_ntp.yml
+    when: configure_fc == 'true'
+  # Configure Time Zone and Summer Time
+  - include_tasks: configure_nxos_timezone.yml
+    when: configure_fc == 'true'
+  # Configure SNMPv3
+  - include_tasks: configure_nxos_snmpv3.yml
+    when: configure_fc == 'true'
+  # Configure Interface, Port-Channel and Trunk Settings
+  - include_tasks: configure_mds_interfaces.yml
+    when: configure_fc == 'true'
+  # Configure vsan
+  - include_tasks: configure_mds_vsans.yml
+    when: configure_fc == 'true'
+  # Save Configuration
+  - include_tasks: save_mds_config.yml
+    when: configure_fc == 'true'

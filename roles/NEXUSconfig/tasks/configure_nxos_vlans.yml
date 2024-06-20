@@ -1,0 +1,18 @@
+---
+  ##
+  # Configure Native VLAN on the Nexus Switches
+  #
+  - name: Create Native VLAN
+    cisco.nxos.nxos_vlans:
+      config:
+        - vlan_id: "{{ native_vlan_id }}"
+          name: "{{ native_vlan_name }}"
+      state: merged
+  # Configure OOB-MGMT VLAN on the Nexus Switches
+  #
+  - name: Create OOB-MGMT VLAN
+    cisco.nxos.nxos_vlans:
+      config:
+        - vlan_id: "{{ oob_vlan_id }}"
+          name: "{{ oob_vlan_name }}"
+      state: merged

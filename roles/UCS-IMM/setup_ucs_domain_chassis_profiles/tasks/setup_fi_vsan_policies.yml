@@ -1,0 +1,73 @@
+---
+
+- name: "Configure FI VSAN Policies"
+  vars:
+    api_info: &api_fi_vsan
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  block:
+  - name: "FI VSAN-A Policy"
+    cisco.intersight.intersight_rest_api:
+          <<: *api_fi_vsan
+          resource_path: /fabric/FcNetworkPolicies
+          query_params:
+             $filter: "Name eq '{{ name_of_fi_vsan_a_policy }}'"
+          api_body: {
+            "EnableTrunking": "{{ enable_vsan_trunking }}",
+            "Name": "{{ name_of_fi_vsan_a_policy }}",
+            "Description": "{{ description_of_fi_vsan_a_policy }}",
+            "Organization": {
+              "Moid": "{{ intersight_org.api_response.Moid }}"
+            },
+          Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}] 
+          }
+    register: fi_vsan_a_policy
+  
+  - name: "Add VSAN-A to FI VSAN-A Policy"
+    cisco.intersight.intersight_rest_api:
+          <<: *api_fi_vsan
+          resource_path: /fabric/Vsans
+          query_params:
+             $filter: "Name eq '{{ vsan_A_name }}'"
+          api_body: {
+            "FcNetworkPolicy": "{{ fi_vsan_a_policy.api_response.Moid }}",
+	          "FcoeVlan": "{{ vsan_A_fcoe_vlan }}",
+	          "Name": "{{ vsan_A_name }}",
+	          "VsanId": "{{ vsan_A_id }}",
+	          "VsanScope": "Uplink"
+          }
+
+  - name: "FI VSAN-B Policy"
+    cisco.intersight.intersight_rest_api:
+          <<: *api_fi_vsan
+          resource_path: /fabric/FcNetworkPolicies
+          query_params:
+             $filter: "Name eq '{{ name_of_fi_vsan_b_policy }}'"
+          api_body: {
+            "EnableTrunking": "{{ enable_vsan_trunking }}",
+            "Name": "{{ name_of_fi_vsan_b_policy }}",
+            "Description": "{{ description_of_fi_vsan_b_policy }}",
+            "Organization": {
+              "Moid": "{{ intersight_org.api_response.Moid }}"
+            },
+          Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}] 
+          }
+    register: fi_vsan_b_policy
+  
+  - name: "Add VSAN-B to FI VSAN-B Policy"
+    cisco.intersight.intersight_rest_api:
+          <<: *api_fi_vsan
+          resource_path: /fabric/Vsans
+          query_params:
+             $filter: "Name eq '{{ vsan_B_name }}'"
+          api_body: {
+            "FcNetworkPolicy": "{{ fi_vsan_b_policy.api_response.Moid }}",
+	          "FcoeVlan": "{{ vsan_B_fcoe_vlan }}",
+	          "Name": "{{ vsan_B_name }}",
+	          "VsanId": "{{ vsan_B_id }}",
+	          "VsanScope": "Uplink"
+          }

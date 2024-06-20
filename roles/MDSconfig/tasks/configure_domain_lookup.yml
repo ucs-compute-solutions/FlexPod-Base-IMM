@@ -1,0 +1,14 @@
+---
+  # This Task sets DNS domain lookup for the switch. 
+
+  - name: build dns server string
+    set_fact:
+      dns_server_string: "{{ dns_servers[0].ip_address }} {{ dns_servers[1].ip_address }}" 
+
+  - name: set ip domain-lookup 
+    cisco.nxos.nxos_command:
+      commands:
+      - configure terminal
+      - ip domain-name {{ dns_domain_name }}
+      - ip name-server {{ dns_server_string }}
+      - ip domain-lookup

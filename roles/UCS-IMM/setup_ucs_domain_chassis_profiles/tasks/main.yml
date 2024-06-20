@@ -1,0 +1,61 @@
+---
+# Create UCS Domain profile and policies specific to Converged Infrastrucure stack
+- name: "Create UCS Domain Profile and Policies"
+  vars:
+    api_info: &api_info_org_moid
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+  intersight_rest_api:
+    <<: *api_info_org_moid
+    resource_path: /organization/Organizations
+    query_params:
+      $filter: "Name eq '{{ org_name }}'"
+  register: intersight_org
+  delegate_to: localhost
+  tags: always
+  run_once: true
+
+# Create Multicast Policy
+- include_tasks: setup_multicast_policy.yml
+
+# Create FI VLAN Policy
+- include_tasks: setup_fi_vlan_policy.yml
+
+# Create FI VSAN Policies
+- include_tasks: setup_fi_vsan_policies.yml
+  when: configure_fc == 'true'
+
+# Create Link Control UDLD Policy
+- include_tasks: setup_link_control_udld_policy.yml
+
+# Create FI Port Policies
+- include_tasks: setup_fi_a_port_policy.yml
+- include_tasks: setup_fi_b_port_policy.yml
+
+# Create NTP Policy
+- include_tasks: setup_ntp_policy.yml
+
+# Create Network Connectivity Policy
+- include_tasks: setup_network_connectivity_policy.yml
+
+# Create SNMP Policy
+- include_tasks: setup_snmp_policy.yml
+  when: configure_snmpv3 == true
+
+# Create System QoS Policy
+- include_tasks: setup_system_qos_policy.yml
+
+# Build UCS Domain Profile
+- include_tasks: build_domain_profile.yml
+
+# Create Chassis Power Policy
+- include_tasks: setup_chassis_power_policy.yml
+
+# Create Chassis Thermal Policy
+- include_tasks: setup_chassis_thermal_policy.yml
+
+# Build UCS Chassis Profile
+- include_tasks: build_chassis_profile.yml

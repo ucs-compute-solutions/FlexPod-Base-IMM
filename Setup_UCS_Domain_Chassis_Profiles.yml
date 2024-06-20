@@ -1,0 +1,11 @@
+---
+# Creating UCS Domain policies and profile specific to Converged Infrastrucure stack. 
+- name: "Configure UCS Domain and Chassis Policies and Profiles"
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - group_vars/secrets.yml
+    - group_vars/ucs.yml
+
+  roles:
+    - role: UCS-IMM/setup_ucs_domain_chassis_profiles

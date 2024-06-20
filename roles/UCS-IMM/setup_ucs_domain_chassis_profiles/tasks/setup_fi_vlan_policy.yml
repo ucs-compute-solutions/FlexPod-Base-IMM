@@ -1,0 +1,79 @@
+---
+
+- name: "Configure FI VLAN Policy"
+  vars:
+    api_info: &api_fi_vlan
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+
+  block:
+  - name: "FI VLAN Policy"
+    cisco.intersight.intersight_rest_api:
+          <<: *api_fi_vlan
+          resource_path: /fabric/EthNetworkPolicies
+          query_params:
+             $filter: "Name eq '{{ name_of_fi_vlan_policy }}'"
+          api_body: {
+              "Name": "{{ name_of_fi_vlan_policy }}",
+              "Description": "{{ description_of_fi_vlan_policy }}",
+              "Organization": {
+                 "Moid": "{{ intersight_org.api_response.Moid }}"
+               },
+              Tags: [{Key: "configmode", Value: "ansible"},{Key: "prefix", Value: "{{ prefix }}"}] 
+           }
+    register: fi_vlan_policy
+
+  - name: "Add {{ native_vlan_name }} to FI VLAN Policy"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_vlan
+        resource_path: /bulk/Requests
+        query_params:
+           $filter: "Name eq '{{ native_vlan_name }}_{{ native_vlan_id }}'"
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": {
+				         "AutoAllowOnUplinks": true,
+				         "EthNetworkPolicy": "{{ fi_vlan_policy.api_response.Moid }}",
+				         "IsNative": true,
+				         "MulticastPolicy": "{{ multicast_policy.api_response.Moid }}",
+				         "Name": '{{ native_vlan_name }}_{{ native_vlan_id }}',
+				         "PrimaryVlanId": 0,
+				         "SharingType": "None",
+                 "VlanId": "{{ native_vlan_id }}"
+              },
+			      "ObjectType": "bulk.RestSubRequest"
+		        }
+	        ],
+	        "Uri": "/v1/fabric/Vlans",
+	        "Verb": "POST"
+      }
+ 
+  - name: "Add {{ oob_vlan_name }} to FI VLAN Policy"
+    cisco.intersight.intersight_rest_api:
+        <<: *api_fi_vlan
+        resource_path: /bulk/Requests
+        query_params:
+           $filter: "Name eq '{{ oob_vlan_name }}_{{ oob_vlan_id }}'"
+        api_body: {
+          "Requests": [
+		        {
+			        "Body": {
+				         "AutoAllowOnUplinks": true,
+				         "EthNetworkPolicy": "{{ fi_vlan_policy.api_response.Moid }}",
+				         "IsNative": false,
+				         "MulticastPolicy": "{{ multicast_policy.api_response.Moid }}",
+				         "Name": '{{ oob_vlan_name }}_{{ oob_vlan_id }}',
+				         "PrimaryVlanId": 0,
+				         "SharingType": "None",
+                 "VlanId": "{{ oob_vlan_id }}"
+              },
+			      "ObjectType": "bulk.RestSubRequest"
+		        }
+	        ],
+	        "Uri": "/v1/fabric/Vlans",
+	        "Verb": "POST"
+      }

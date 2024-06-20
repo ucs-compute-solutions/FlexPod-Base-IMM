@@ -1,0 +1,23 @@
+---
+  # This Task sets Global NTP Servers for the Nexus switches and enables Nexus 9K NTP Distribution for the FlexPod when selected
+  
+  - name: Set NTP Servers
+    cisco.nxos.nxos_ntp_global:
+      config:
+        servers:
+          - server: "{{ item }}"
+            vrf: management
+    with_items: "{{ global_NTP_servers }}"
+  - name: Set partner switch as peer
+    cisco.nxos.nxos_ntp_global:
+      config:
+        peers:
+          - peer: "{{ vpc_destination }}"
+            vrf: management
+    when: use_nexus_ntp_distribution == 'true'
+  - name: Set NTP Distribution Options
+    cisco.nxos.nxos_ntp_global:
+      config:
+        master: 
+          stratum: "{{ ntp_stratum_level }}"
+    when: use_nexus_ntp_distribution == 'true'

@@ -1,0 +1,9 @@
+---
+  # This Task sets the time zone and summer time settings for the switch. 
+
+  - name: set time zone and summer time
+    cisco.nxos.nxos_command:
+      commands:
+      - configure terminal
+      - "{{ switch_timezone_command }}"       
+      - "{{ summer_time_command }}"
