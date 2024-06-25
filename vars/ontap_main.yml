@@ -40,7 +40,7 @@ autosupport_vars:
   mail_hosts: 10.102.1.150
   proxy_url: #Optional: If authentication is used, use format: "username:password@host:port"
   from_address: "aa02-c800@flexpodb4.cisco.com"
-  to_addresses: "<email-address>"
+  to_addresses: "{{ global_snmp_contact }}"
 
 #FIPS Mode on the ONTAP Cluster. By default, SSL on ONTAP is set with FIPS compliance disabled. Set this to "true" if you want to enable FIPS-compliant mode for the cluster
 is_fips_enabled: true
