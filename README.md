@@ -45,5 +45,5 @@ The steps for setting up a FlexPod with FC boot with FC-NVMe and NFS storage pro
 
 The Ansible playbooks and CVD are structured in a way that a Fibre Channel Boot, Fibre Channel Boot with FC-NVMe, iSCSI Boot or iSCSI Boot with NVMe-TCP FlexPod or combination configurations can be setup by adjusting the variables. Also, the playbooks can be used to setup the following topology utilizing Cisco Nexus switches that support SAN Switching (93180YC-FX, 93360YC-FX2, or 9336C-FX2-E) for both LAN and SAN switching and 100G FCoE (or optional 32G FC) Uplinks from the FIs to the switches.
 
-![block-diagram](https://github.com/ucs-compute-solutions/FlexPod-IMM-VMware/blob/main/ReadmePics/NexusSAN-Topology.jpg)
+![block-diagram](https://github.com/ucs-compute-solutions/FlexPod-Base-IMM/blob/main/ReadmePics/NexusSAN-Topology.jpg)
 
