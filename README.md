@@ -38,12 +38,11 @@ The steps for setting up a FlexPod with FC boot with FC-NVMe and NFS storage pro
 11.  Execute the IMM playbook to set up the UCS Domain Profile and UCS Chassis Profile with "ansible-playbook ./Setup_UCS_Domain_Chassis_Profiles.yml. 
 12.  Follow the manual steps in the CVD to attach the UCS Domain Profile to the UCS Domain and attach all chassis to UCS Chassis Profiles.
 13.  If configuring Fibre Channel, follow the manual steps in the CVD to set up the MDS switches on the network and ssh into each switch.
-15.  If configuring Fibre Channel, execute the MDS playbook with "ansible-playbook ./Setup_MDS.yml -i inventory".
-27.  Follow the steps in the CVD to install Active IQ Unified Manager via Ansible.
-28.  Follow the manual steps in the CVD to finish setting up ONTAP tools, the SnapCenter Plug-in, and AIQUM.
-29.  Follow the manual steps in the CVD to setup Cisco Intersight Assist and Cisco Nexus Dashboard Fabric Controller (NDFC) SAN.
+14.  If configuring Fibre Channel, execute the MDS playbook with "ansible-playbook ./Setup_MDS.yml -i inventory".
+15.  If desired, install and setup Cisco Assist and NetApp AIQUM on a management pod.
+16.  If desired, follow the manual steps in the CVD to claim NetApp AIQUM, Cisco Nexus, and Cisco MDS targets in Cisco Intersight.
 
-The Ansible playbooks and CVD are structured in a way that a Fibre Channel Boot, Fibre Channel Boot with FC-NVMe, iSCSI Boot or iSCSI Boot with NVMe-TCP FlexPod or combination configurations can be setup by adjusting the variables. Also, the playbooks can be used to setup the following topology utilizing Cisco Nexus switches that support SAN Switching (93180YC-FX, 93360YC-FX2, or 9336C-FX2-E) for both LAN and SAN switching and 100G FCoE (or optional 32G FC) Uplinks from the FIs to the switches.
+The Ansible playbooks and CVD are structured in a way that either a Fibre Channel or IP-only FlexPod can be setup by adjusting the variables. Also, the playbooks can be used to setup the following topology utilizing Cisco Nexus switches that support SAN Switching (93180YC-FX, 93360YC-FX2, or 9336C-FX2-E) for both LAN and SAN switching and 100G FCoE (or optional 32G FC) Uplinks from the FIs to the switches.
 
 ![block-diagram](https://github.com/ucs-compute-solutions/FlexPod-Base-IMM/blob/main/ReadmePics/NexusSAN-Topology.jpg)
 
