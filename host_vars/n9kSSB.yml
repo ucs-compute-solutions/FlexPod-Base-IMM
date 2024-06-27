@@ -2,7 +2,7 @@
 # Variables defined here are specific to Nexus9K-B for SAN Switching.
 #
 # Variables used to create port channel to UCS.
-  port_channel_id: 151
+  port_channel_id: 1103
   port_channel_speed: "auto" # Set to "auto" for FCoE port-channel and either "16000" or "32000" for FC port-channel
   port_channel_duplex: "auto"
   port_channel_description: "AA02-6536-B"
@@ -20,23 +20,23 @@
     - interface: "fc1/2"
       description: "AA02-C800-01:2d"
       speed: "32000"
-    - interface: "fc1/3"
+    - interface: "fc1/49"
       description: "AA02-C800-02:2b"
       speed: "32000"
-    - interface: "fc1/4"
+    - interface: "fc1/50"
       description: "AA02-C800-02:2d"
       speed: "32000"
 # Comment out the interfaces not being used below.
   ucs_interface_list:
-#    - interface: "fc1/5"
+#    - interface: "fc1/3"
 #      description: "AA02-6536-B:fc1/35/1"
-#    - interface: "fc1/6"
+#    - interface: "fc1/4"
 #      description: "AA02-6536-B:fc1/35/2"
-#    - interface: "fc1/7"
+#    - interface: "fc1/51"
 #      description: "AA02-6536-B:fc1/35/3"
-#    - interface: "fc1/8"
+#    - interface: "fc1/52"
 #      description: "AA02-6536-B:fc1/35/4"
-    - interface: "Eth1/51"
+    - interface: "Eth1/103"
       description: "AA02-6536-B:Eth1/27"
-    - interface: "Eth1/52"
+    - interface: "Eth1/104"
       description: "AA02-6536-B:Eth1/28"
