@@ -1,4 +1,4 @@
-
+[![published](https://static.production.devnetcloud.com/codeexchange/assets/images/devnet-published.svg)](https://developer.cisco.com/codeexchange/github/repo/ucs-compute-solutions/FlexPod-Base-IMM)
 # FlexPod Datacenter Base Configuration using IaC with Cisco IMM and NetApp ONTAP
 
 This repository for FlexPod contains Ansible playbooks to configure Cisco Nexus, NetApp ONTAP, Cisco UCS Intersight, and Cisco MDS. FlexPod Base is a configuration for setting up the base FlexPod components on the network with all port-channels and virtual port-channels configured and only the out-of-band management (OOB-MGMT) VLAN. Tenants for various hypervisors, bare metal OS, and applications can then be configured on top of FlexPod Base. This repository can be used for setting up Cisco devices and NetApp ONTAP Storage as covered in the following Cisco Validated Design (CVD): https://www.cisco.com/c/en/us/td/docs/unified_computing/ucs/UCS_CVDs/flexpod_base_imm_m7_iac.html.
