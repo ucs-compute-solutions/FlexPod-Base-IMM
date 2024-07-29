@@ -12,7 +12,6 @@
     validate_certs: false
   tags:
     - ontap_cluster_location_update
-    - ontap_base_config
 
 # Ensure that the auto-revert parameter is set for the cluster management interface
 - name: Ensure auto-revert is set for the cluster management interface
@@ -26,7 +25,6 @@
     validate_certs: false
   tags:
     - ontap_config_cluster_mgmt
-    - ontap_base_config
 
 # Getting total number of port count across all nodes in the ONTAP Cluster
 - name: Get the total number of port count across all nodes in the ONTAP Cluster
@@ -36,14 +34,12 @@
     - "{{ha_pairs}}"
   tags:
     - ontap_config_delete_broadcast_domain
-    - ontap_base_config
 
 # See the total port count value
 - name: See the total port count value
   ansible.builtin.debug: var=total_port_count|int*2
   tags:
     - ontap_config_delete_broadcast_domain
-    - ontap_base_config
 
 # Delete the Default broadcast domains with node ports (This does not include Cluster ports and management ports)
 - name: Delete the default broadcast domains with node ports
@@ -59,7 +55,6 @@
   with_sequence: start=1 end="{{ total_port_count|int*2 }}" format=Default-%01x
   tags:
     - ontap_config_delete_broadcast_domain
-    - ontap_base_config
 
 # Set up the service processor network interface
 - name: Set the Service processor network interface
@@ -81,7 +76,6 @@
     - "{{ ha_pairs | map(attribute='node_specs') | flatten }}"
   tags:
     - ontap_config_sp_interface
-    - ontap_base_config
 
 # Get the disk class information
 - name: Get the disk class information
@@ -100,14 +94,12 @@
   register: result
   tags:
     - ontap_create_data_aggr
-    - ontap_base_config
 
 - name: Print Disk Class
   ansible.builtin.debug:
     msg: "{{result.ontap_info.storage_disks.records[0].class}}"
   tags:
     - ontap_create_data_aggr
-    - ontap_base_config
 
 # Create data aggregates
 - name: Create the data aggregates
@@ -127,7 +119,6 @@
   when: item.1.aggr_name is defined and item.1.aggr_name != None
   tags:
     - ontap_create_data_aggr
-    - ontap_base_config
 
 # Zero All Spare Disks
 - name: Zero all the spare disks
@@ -141,17 +132,6 @@
     validate_certs: false
   tags:
     - ontap_disk_zerospares
-    - ontap_base_config
-
-# Create the HA pairs count variable
-- name: Create the HA pairs count variable
-  ansible.builtin.set_fact:
-    ha_pairs_count: "{{ ha_pairs_count | default([]) + [item] }}"
-  with_items:
-    - "{{ ha_pairs | map(attribute='ha_no') | flatten }}"
-  tags:
-    - ontap_check_cluster_ha
-    - ontap_base_config
 
 # Ensure the cluster HA status. Only enable HA mode for two-node clusters
 # Note that this task is not applicable for clusters with more than two nodes
@@ -163,10 +143,9 @@
     password: "{{password}}"
     https: true
     validate_certs: false
-  when: ha_pairs_count|length == 1
+  when: ha_pairs | length == 1
   tags:
     - ontap_check_cluster_ha
-    - ontap_base_config
 
 # Disable flow control only on ports that are used for data traffic
 - name: Disable flow control on data ports
@@ -184,12 +163,10 @@
     - "{{ ha_pairs | map(attribute='node_data_ports') | flatten }}"
   tags:
     - ontap_disable_flowcontrol
-    - ontap_base_config
 
 - ansible.builtin.debug: msg="This task does not disable flow control on other ports that are currently not being setup for data access"
   tags:
     - ontap_disable_flowcontrol
-    - ontap_base_config
 
 # Enable CDP on the Storage Controller Nodes
 - name: Enable CDP on the Storage Controller Nodes
@@ -207,7 +184,6 @@
     validate_certs: false
   tags:
     - ontap_enable_cdp
-    - ontap_base_config
 
 # Enable LLDP on the Storage Controller Nodes
 - name: Enable LLDP on the Storage Controller Nodes
@@ -225,7 +201,6 @@
     validate_certs: false
   tags:
     - ontap_enable_lldp
-    - ontap_base_config
 
 # Create the DNS server list variable
 - name: Create the DNS server list
@@ -237,13 +212,11 @@
     - item.ip_address is defined and item.ip_address != None
   tags:
     - ontap_config_dns
-    - ontap_base_config
 
 # Configure DNS
 - name: Configure DNS
   netapp.ontap.na_ontap_dns:
     state: present
-    vserver: "{{cluster_name}}"
     nameservers: "{{ dns_server_list }}"
     domains: "{{dns_domain_name}}"
     hostname: "{{inventory_hostname}}"
@@ -253,7 +226,6 @@
     validate_certs: false
   tags:
     - ontap_config_dns
-    - ontap_base_config
 
 # Configure NTP server
 - name: Configure NTP
@@ -269,7 +241,6 @@
     - "{{ntp_servers}}"
   tags:
     - ontap_config_ntp
-    - ontap_base_config
 
 # Enable Takeover for Storage Failover
 - name: Enable Takeover for Storage Failover
@@ -286,7 +257,6 @@
     - "{{ ha_pairs | map(attribute='node_specs') | flatten }}"
   tags:
     - ontap_validate_storage_failover_state
-    - ontap_base_config
 
 # Set Cluster's Timezone
 - name: Set Cluster's Timezone
@@ -302,7 +272,6 @@
     validate_certs: false
   tags:
     - ontap_set_timezone
-    - ontap_base_config
 
 # Getting the FCP port list with port speed and node name
 - name: Get the FCP port list with port speed and node name
@@ -311,9 +280,9 @@
   with_subelements:
     - "{{ ha_pairs }}"
     - node_specs
+  when: configure_fc == 'true'
   tags:
     - ontap_fc_adapters
-    - ontap_base_config
 
 # Disable Auto-Negotiate on Fibre Channel Ports
 - name: Disable each FC adapter in the controllers/nodes
@@ -329,10 +298,9 @@
   with_subelements:
     - "{{ fcp_port_list }}"
     - fcp_ports
-  when: "('fcp' in svm_specs.allowed_protocols)"
+  when: configure_fc == 'true'
   tags:
     - ontap_fc_adapters
-    - ontap_base_config
 
  # Set the desired speed on the FC adapter
 - name: Set the desired speed on the FC adapter and return it to the online state
@@ -348,10 +316,9 @@
   with_subelements:
     - "{{ fcp_port_list }}"
     - fcp_ports
-  when: "('fcp' in svm_specs.allowed_protocols)"
+  when: configure_fc == 'true'
   tags:
     - ontap_fc_adapters
-    - ontap_base_config
 
 # Configure AutoSupport
 - name: Configure AutoSupport
@@ -373,7 +340,6 @@
     - "{{ ha_pairs | map(attribute='node_specs') | flatten }}"
   tags:
     - ontap_config_autosupport
-    - ontap_base_config
 
 # Add ONTAP Licenses using legacy keys
 - name: Add licenses using legacy keys
@@ -388,7 +354,6 @@
   when: "('legacy' in ontap_license_key_format)"
   tags:
     - ontap_license_legacy
-    - ontap_base_config
 
 # Add ONTAP Licenses using NetApp License File (NLF)
 - name: Add licenses using NLF
@@ -406,7 +371,6 @@
   when: "('NLF' in ontap_license_key_format)"
   tags:
     - ontap_license_nlf
-    - ontap_base_config
 
 # Enable/Disable FIPS Mode on the ONTAP Cluster
 - name: Enable/Disable FIPS on the ONTAP Cluster
@@ -420,20 +384,17 @@
     validate_certs: false
   tags:
     - ontap_fips_config
-    - ontap_base_config
 
 #Debug message to get the status of Cluster FIPS mode
 - ansible.builtin.debug: msg="Cluster FIPS mode is enabled."
   when: is_fips_enabled == true
   tags:
     - ontap_fips_config
-    - ontap_base_config
 
 - ansible.builtin.debug: msg="Cluster FIPS mode is disabled."
   when: is_fips_enabled == false
   tags:
     - ontap_fips_config
-    - ontap_base_config
 
 # Configure SNMP contact
 - name: Configure SNMP contact
@@ -449,7 +410,6 @@
   when: enable_snmp == true
   tags:
     - ontap_config_snmp_contact
-    - ontap_base_config
 
 # Configure SNMP location
 - name: Configure SNMP location
@@ -465,7 +425,6 @@
   when: enable_snmp == true
   tags:
     - ontap_config_snmp_location
-    - ontap_base_config
 
 # Configure SNMP init value
 - name: Configure SNMP init value
@@ -481,17 +440,12 @@
   when: enable_snmp == true
   tags:
     - ontap_config_snmp_init
-    - ontap_base_config
 
 # Enable SNMP
 - name: Enable SNMP
-  netapp.ontap.na_ontap_rest_cli:
-    command: options
-    verb: PATCH
-    params:
-      option_name: snmp.enable
-    body:
-      option_value: "on"
+  netapp.ontap.na_ontap_snmp_config:
+    state: present
+    enabled: true
     hostname: "{{inventory_hostname}}"
     username: "{{username}}"
     password: "{{password}}"
@@ -500,7 +454,6 @@
   when: enable_snmp == true
   tags:
     - ontap_enable_snmp
-    - ontap_base_config
 
 # Configure SNMP traps to send to remote hosts
 - name: Create SNMP traphost
@@ -517,14 +470,13 @@
     - is_fips_enabled == false
   tags:
     - ontap_config_snmp_traphost
-    - ontap_base_config
 
 # Configure SNMP community. SNMPv1 and SNMPv2c are enabled after you create an SNMP community
 - name: Configure SNMP community
   netapp.ontap.na_ontap_snmp:
     state: present
-    community_name: "{{snmp_community}}"
-    access_control: 'ro'
+    snmp_username: "{{snmp_community}}"
+    use_rest: always
     hostname: "{{inventory_hostname}}"
     username: "{{username}}"
     password: "{{password}}"
@@ -535,21 +487,19 @@
     - is_fips_enabled == false
   tags:
     - ontap_config_snmp_community
-    - ontap_base_config
 
 # Configure SNMPv3 Access
 - name: Configure SNMPv3 Access
-  netapp.ontap.na_ontap_user:
-    vserver: "{{cluster_name}}"
-    name: "{{user}}"
+  netapp.ontap.na_ontap_snmp:
     state: present
-    role_name: admin
-    applications: snmp
+    snmp_username: "{{user}}"
+    use_rest: always
     authentication_method: usm
-    authentication_protocol: "{{authentication_protocol}}"
-    authentication_password: "{{authentication_password}}"
-    privacy_protocol: "{{privacy_protocol}}"
-    privacy_password: "{{privacy_password}}"
+    snmpv3:
+      authentication_protocol: "{{authentication_protocol}}"
+      authentication_password: "{{authentication_password}}"
+      privacy_protocol: "{{privacy_protocol}}"
+      privacy_password: "{{privacy_password}}"
     hostname: "{{inventory_hostname}}"
     username: "{{username}}"
     password: "{{password}}"
@@ -558,7 +508,6 @@
   when: enable_snmp == true
   tags:
     - ontap_config_snmpv3_access
-    - ontap_base_config
 
 # Create login banner for the ONTAP Cluster
 - name: Create login banner for the ONTAP Cluster
@@ -568,10 +517,9 @@
     username: "{{username}}"
     password: "{{password}}"
     https: true
-    validate_certs: false 
+    validate_certs: false
   tags:
     - ontap_cluster_login_banner
-    - ontap_base_config
 
 # Remove insecure ciphers from the ONTAP Cluster. Ciphers with the suffix CBC are considered insecure
 - name: Remove insecure ciphers from the ONTAP Cluster
@@ -586,4 +534,3 @@
     validate_certs: false
   tags:
     - ontap_cluster_remove_insecure_ciphers
-    - ontap_base_config
