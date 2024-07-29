@@ -7,7 +7,7 @@ The ONTAP base deployment automation is based on the following roles:
         ontap_primary_setup
         ontap_network
 
-These roles are developed as per the best practices prescribed in the Cisco Validated Design (CVD) "[FlexPod Datacenter using IaC with Cisco IMM M7, VMware vSphere 8, and NetApp ONTAP 9.12.1](https://www.cisco.com/c/en/us/td/docs/unified_computing/ucs/UCS_CVDs/flexpod_imm_m7_iac.html)".
+These roles are developed as per the best practices prescribed in the Cisco Validated Design (CVD) "[FlexPod Datacenter Base Configuration using IaC with Cisco IMM and NetApp ONTAP](https://www.cisco.com/c/en/us/td/docs/unified_computing/ucs/UCS_CVDs/flexpod_base_imm_m7_iac.html)".
 
 ### Environment Validated
 
