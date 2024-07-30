@@ -55,8 +55,8 @@ snmp_community: "public"  #Update this field only if "is_fips_enabled" is set to
 
 #SNMPv3 related variables
 user: "{{ global_snmp_user_name }}"   #The name of the SNMPv3 user to manage
-authentication_protocol: sha   #Authentication protocol for the snmp user (Choices: none, md5, sha, sha2-256). If "is_fips_enabled" is set to true, the options are 'sha' and 'sha2-256'. SNMPv3 user with none or MD5 as authentication protocol is non-compliant to FIPS
-authentication_password: "{{ global_snmp_auth_password }}"   #Password for the authentication protocol. This is required for ‘md5’, ‘sha’ and ‘sha2-256’ authentication protocols and not required for ‘none’
+authentication_protocol: sha   #Authentication protocol for the snmp user (Choices: none, md5, sha, sha2_256). If "is_fips_enabled" is set to true, the options are 'sha' and 'sha2_256'. SNMPv3 user with none or MD5 as authentication protocol is non-compliant to FIPS
+authentication_password: "{{ global_snmp_auth_password }}"   #Password for the authentication protocol. This is required for ‘md5’, ‘sha’ and ‘sha2_256’ authentication protocols and not required for ‘none’
 privacy_protocol: aes128   #Privacy protocol for the snmp user (Choices: none, des, aes128). When cluster FIPS mode is on (is_fips_enabled: true), ‘aes128’ is the only possible and valid value. SNMPv3 user with none or DES as encryption protocol is non-compliant to FIPS
 privacy_password: "{{ global_snmp_priv_password }}"   #Password for the privacy protocol. This is required for ‘des’ and ‘aes128’ privacy protocols and not required for ‘none’
 
