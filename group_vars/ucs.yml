@@ -1,5 +1,5 @@
 ---
-# This file contains UCS IMM variables.
+# This file contains UCS IMM variables and now supports Cisco UCS FI S9108 (Cisco UCS X-Series Direct).
 # 
 # Enter Intersight API Key ID and the location of the SecretKey file
 # 
@@ -14,19 +14,23 @@ org_name: "AA02"
 # UCS Domain Name
 ucs_domain_name: "AA02-6536"
 
-# FI Device Model - Set to UCS-FI-6536, UCS-FI-6454, or UCS-FI-64108
+# FI Device Model - Set to UCS-FI-6536, UCS-FI-6454, UCS-FI-64108, or USCX-S9108-100G
 fi_device_model: "UCS-FI-6536"
 
-# FC Breakout Ports on UCS-FI-6536 - These ports count backwards from 36-33.
-# Starting with 33, comment out any ports that are not used.
-# If not using UCS-FI-6536, set configure_6536_fc_breakout to false.
-configure_6536_fc_breakout: 'true'
+# FC Breakout Ports on UCS-FI-6536 or UCSX-S9108-100G
+# On UCS-FI-6536, these ports count backwards from 36-33.
+# On UCSX-S9108-100G, these ports count up from 1-2.
+# Below comment out any ports that are not used.
+# If not using FC breakout ports, set configure_fc_breakout to false.
+configure_fc_breakout: 'true'
 fc_breakout_speed: "32" # Set to 16 or 32
-fc_6536_breakout_ports:
+fc_breakout_ports:
   - 36
   - 35
 #  - 34
 #  - 33
+#  - 1
+#  - 2
 
 # FC Ports on UCS-FI-6454 or UCS-FI-64108 - These ports count upwards in groups of 4 
 # from port 1 except for 15 and 16
@@ -47,6 +51,7 @@ fi_eth_breakout_ports:
 
 # Configure Server Ports
 # Chassis and C-Series Full Server Ports
+# Note that UCSX-S9108-100G does not currently have server ports.
 configure_full_server_ports: 'true'
 full_server_ports: 
   - 9
@@ -57,6 +62,7 @@ full_server_ports:
   - 14
 # Chassis and C-Series Breakout Server Ports
 # Make sure that any ports used here are set as breakouts above.
+# Note that UCSX-S9108-100G does not currently have server ports.
 configure_breakout_server_ports: 'true'
 breakout_server_ports:
   - [17, 1] # [port, subport]
@@ -85,10 +91,10 @@ uplink_port_channel_id_breakout: 119
 uplink_port_channel_breakout_port_1: 19
 uplink_port_channel_breakout_port_2: 20
 
-# FC Breakout Uplink Port-Channel on UCS-FI-6536 - This task sets up a port-channel 
-# with with either 4 or 8 sub-ports in the port-channel (all 4 sub-ports are always used).
+# FC Breakout Uplink Port-Channel on UCS-FI-6536 or UCSX-S9108-100G 
+# This task sets up a port-channel with with either 4 or 8 sub-ports in the port-channel (all 4 sub-ports are always used).
 # If a different number of ports is needed, the port policies can be adjusted in the Intersight Web interface if necessary.
-# If not using UCS-FI-6536 breakout FC port-channel, set configure_6536_fc_breakout_pc to false.
+# If not using breakout FC port-channel, set configure_fc_breakout_pc to false.
 configure_6536_fc_breakout_pc: 'true'
 num_6536_breakout_ports_in_pc: 4
 fc_6536_breakout_pc_id: 135
