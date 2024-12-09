@@ -7,6 +7,10 @@ The CVD lays out the complete process for configuring the FlexPod using Ansible.
 
 ![block-diagram](https://github.com/ucs-compute-solutions/FlexPod-Base-IMM/blob/main/ReadmePics/Main-Topology.jpg)  
 
+These playbooks have been modified to add support for Cisco UCS X-Series Direct with the Cisco UCSX-S9108-100G Fabric Interconnects inserted directly into the Cisco UCSX-9508 Chassis. This topology is shown below.
+
+![block-diagram](https://github.com/ucs-compute-solutions/FlexPod-Base-IMM/blob/main/ReadmePics/X-Direct-Topology.jpg)
+
 # Set up the execution environment
 
 To execute various ansible playbooks, a linux based system will need to be setup as described in the CVD with the packages listed at the following pages:
