@@ -45,7 +45,7 @@ The steps for setting up a FlexPod with FC boot with FC-NVMe and NFS storage pro
 15.  If desired, install and setup Cisco Assist and NetApp AIQUM on a management pod.
 16.  If desired, follow the manual steps in the CVD to claim NetApp AIQUM, Cisco Nexus, and Cisco MDS targets in Cisco Intersight.
 
-The Ansible playbooks and CVD are structured in a way that either a Fibre Channel or IP-only FlexPod can be setup by adjusting the variables. Also, the playbooks can be used to setup the following topology utilizing Cisco Nexus switches that support SAN Switching (93180YC-FX, 93360YC-FX2, or 9336C-FX2-E) for both LAN and SAN switching and 100G FCoE (or optional 32G FC) Uplinks from the FIs to the switches.
+The Ansible playbooks and CVD are structured in a way that either a Fibre Channel or IP-only FlexPod can be setup by adjusting the variables. Also, the playbooks can be used to setup the following topology utilizing Cisco Nexus switches that support SAN Switching (93180YC-FX, 93360YC-FX2, or 9336C-FX2-E) for both LAN and SAN switching and 100G FCoE (or optional 32G FC) Uplinks from the FIs to the switches. Note that Nexus SAN Switching with 100G FCoE is also supported with Cisco UCS X-Series Direct.
 
 ![block-diagram](https://github.com/ucs-compute-solutions/FlexPod-Base-IMM/blob/main/ReadmePics/NexusSAN-Topology.jpg)
 
