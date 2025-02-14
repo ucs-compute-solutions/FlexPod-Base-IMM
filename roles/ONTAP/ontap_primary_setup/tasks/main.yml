@@ -526,7 +526,7 @@
   netapp.ontap.na_ontap_rest_cli:
     command: 'security/ssh/remove'
     verb: 'POST'
-    body: {'ciphers': ['aes256-cbc','aes192-cbc','aes128-cbc','3des-cbc'], 'vserver': '{{cluster_name}}'}
+    body: {'ciphers': ['aes256-cbc','aes192-cbc','aes128-cbc'], 'vserver': '{{cluster_name}}'}
     hostname: "{{inventory_hostname}}"
     username: "{{username}}"
     password: "{{password}}"
