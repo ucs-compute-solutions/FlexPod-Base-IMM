@@ -13,7 +13,7 @@ These roles are developed as per the best practices prescribed in the Cisco Vali
 
 As the automation solution is specifically build for the above mentioned CVD, the current roles and playbooks support the following components:
 
-        Storage Operating System: ONTAP 9.14.1
+        Storage Operating System: ONTAP 9.16.1
         Storage Protocols: FCP
 
 ### Prerequisite
