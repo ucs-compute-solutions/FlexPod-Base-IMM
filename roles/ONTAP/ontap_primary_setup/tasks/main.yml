@@ -520,17 +520,3 @@
     validate_certs: false
   tags:
     - ontap_cluster_login_banner
-
-# Remove insecure ciphers from the ONTAP Cluster. Ciphers with the suffix CBC are considered insecure
-- name: Remove insecure ciphers from the ONTAP Cluster
-  netapp.ontap.na_ontap_rest_cli:
-    command: 'security/ssh/remove'
-    verb: 'POST'
-    body: {'ciphers': ['aes256-cbc','aes192-cbc','aes128-cbc'], 'vserver': '{{cluster_name}}'}
-    hostname: "{{inventory_hostname}}"
-    username: "{{username}}"
-    password: "{{password}}"
-    https: true
-    validate_certs: false
-  tags:
-    - ontap_cluster_remove_insecure_ciphers
